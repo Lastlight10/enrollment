@@ -1,0 +1,64 @@
+/* Sidebar and Main Layout Structure */
+.sidebar {
+  min-height: 100vh;
+  width: 250px;
+  background-color: #212529;
+  transition: all 0.3s;
+}
+
+main {
+  background-color: #f8f9fa; /* Light grey background like most dashboards */
+  min-height: 100vh;
+}
+
+/* Card Enhancements */
+.card {
+  border-radius: 10px;
+  transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-5px); /* Subtle lift effect on hover */
+}
+
+/* Icon Containers */
+.bg-primary.rounded, 
+.bg-warning.rounded, 
+.bg-success.rounded {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Table Styling */
+.table thead th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  border-top: none;
+}
+
+.table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+}
+
+/* Badge Styling */
+.badge {
+  padding: 0.5em 0.8em;
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+/* Scrollbar for the main content if it overflows */
+main::-webkit-scrollbar {
+  width: 6px;
+}
+
+main::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 10px;
+}

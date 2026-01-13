@@ -42,6 +42,10 @@ class ComposerStaticInit4b3f46cc5aaf35ab7ec7e7f8a4a9721e
             'Psr\\Clock\\' => 10,
             'PHPMailer\\PHPMailer\\' => 20,
         ),
+        'M' =>
+        array (
+            'Models\\' => 7,
+        ),
         'L' =>
         array (
             'Laravel\\SerializableClosure\\' => 28,
@@ -59,12 +63,18 @@ class ComposerStaticInit4b3f46cc5aaf35ab7ec7e7f8a4a9721e
         ),
         'C' =>
         array (
+            'Controllers\\' => 12,
             'Carbon\\Doctrine\\' => 16,
             'Carbon\\' => 7,
         ),
         'B' =>
         array (
             'Brick\\Math\\' => 11,
+        ),
+        'A' =>
+        array (
+            'App\\Repositories\\' => 17,
+            'App\\Core\\' => 9,
         ),
     );
 
@@ -117,6 +127,10 @@ class ComposerStaticInit4b3f46cc5aaf35ab7ec7e7f8a4a9721e
         array (
             0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
         ),
+        'Models\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/models',
+        ),
         'Laravel\\SerializableClosure\\' =>
         array (
             0 => __DIR__ . '/..' . '/laravel/serializable-closure/src',
@@ -144,6 +158,10 @@ class ComposerStaticInit4b3f46cc5aaf35ab7ec7e7f8a4a9721e
         array (
             0 => __DIR__ . '/..' . '/doctrine/inflector/src',
         ),
+        'Controllers\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/controllers',
+        ),
         'Carbon\\Doctrine\\' =>
         array (
             0 => __DIR__ . '/..' . '/carbonphp/carbon-doctrine-types/src/Carbon/Doctrine',
@@ -155,6 +173,14 @@ class ComposerStaticInit4b3f46cc5aaf35ab7ec7e7f8a4a9721e
         'Brick\\Math\\' =>
         array (
             0 => __DIR__ . '/..' . '/brick/math/src',
+        ),
+        'App\\Repositories\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/repositories',
+        ),
+        'App\\Core\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/core',
         ),
     );
 
