@@ -54,35 +54,5 @@ abstract class Controller
     header("Location: {$url}");
     exit();
   }
-  public function verify()
-  {
-    $token = $_GET['token'] ?? '';
-
-    if (empty($token)) {
-      die("Invalid Request");
-    }
-
-    // 1. Look up the user by the token
-    $user = $this->userRepo->findByToken($token);
-
-    if ($user) {
-      // 2. Update status and clear the token so it can't be used again
-    $updateData = [
-        'status'             => 'active',
-        'verification_token' => null // Clear token after use
-      ];
-
-      $this->userRepo->update($user->id, $updateData);
-
-      Logger::log("USER ACTIVATED: ID {$user->id}");
-
-      // 3. Redirect to login with success message
-      $_SESSION['success'] = "Account verified! You can now log in.";
-      header('Location: /auth/login');
-      exit();
-    } else {
-        // Token not found or expired
-        $this->view('auth/login', ['error' => 'Invalid or expired verification link.']);
-    }
-  }
+  
 }
