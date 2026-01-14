@@ -20,11 +20,13 @@ $router->get('/', 'Controllers\HomeController@index');
 $router->group('/auth', function($router) {
   $router->get('/register', 'Controllers\AuthController@showRegister');
   $router->post('/register', 'Controllers\AuthController@register');
-  
+
+  $router->get('/verify-email', 'Controllers\AuthController@verify_email');
+
   $router->get('/login', 'Controllers\AuthController@showLogin');
   $router->post('/login', 'Controllers\AuthController@login');
 
-   $router->get('/logout', 'Controllers\AuthController@logout');
+  $router->get('/logout', 'Controllers\AuthController@logout');
 
   $router->get('/verify-otp', 'Controllers\AuthController@showVerifyOtp');
   $router->post('/verify-otp', 'Controllers\AuthController@verifyOtp');

@@ -18,7 +18,8 @@ class User extends Model {
         'type',
         'status',
         'otp_code',
-        'otp_expires_at'
+        'otp_expires_at',
+        'verification_token'
     ];
 
     protected $hidden = [

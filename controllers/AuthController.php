@@ -80,6 +80,10 @@ public function logout()
       if ($user->type === 'admin' || $user->type === 'staff') {
         $this->redirect('/staff/dashboard'); // Match the router path exactly
       } else {
+
+        if($user-> status ==='inactive'){
+          $this->view('login/login', ['error' => 'Account is not verified.'], 'default');
+        }
         $this->redirect('/student/dashboard');
       }
     }
@@ -96,11 +100,35 @@ public function logout()
     $this->view('login/register', ['title' => 'Create Account'], 'default');
   }
 
-  /**
-   * Handle Registration Logic (POST)
-   */
+  public function verify_email()
+  {
+    $token = $_GET['token'] ?? '';
+
+    if (empty($token)) {
+      die("Invalid Request: No token provided.");
+    }
+
+    $user = $this->userRepo->findByToken($token);
+
+    if ($user) {
+      $updateData = [
+        'status'             => 'active',
+        'verification_token' => null 
+      ];
+
+      $this->userRepo->update($user->id, $updateData);
+      Logger::log("USER ACTIVATED: ID {$user->id}");
+
+      $_SESSION['success'] = "Account verified! You can now log in.";
+      $this->redirect('/auth/login');
+    } else {
+      // Updated path to show login with error if token fails
+      $this->view('login/login', ['error' => 'Invalid or expired verification link.'], 'default');
+    }
+  }
   public function register()
   {
+    $token = bin2hex(random_bytes(32));
     $data = [
       'username'   => $this->input('username'),
       'password'   => $this->input('password'), 
@@ -110,22 +138,19 @@ public function logout()
       'last_name'  => $this->input('last_name'),
       'birth_date' => $this->input('birth_date'),
       'type'       => 'student',
-      'status'     => 'inactive'
+      'status'     => 'inactive',
+      'verification_token' => $token
     ];
 
     try {
       $user = $this->userRepo->create($data);
-      $this->userRepo->handleOtpFlow($user->id, $user->email);
-
-      // Set sessions for registration flow
-      $_SESSION['verify_email'] = $user->email;
-      $_SESSION['verify_flow'] = 'register';
-
-      Logger::log("USER REGISTERED & OTP SENT: ID {$user->id}");
       
-      // Redirect WITHOUT the email in the URL
-      header('Location: /auth/verify-otp');
-      exit();
+      // Use PHPMailer to send the link
+      $this->userRepo->sendVerificationEmail($user->email, $token);
+
+
+      $_SESSION['success']= "Successfully Registerd! Verification Email sent to " . $user->email . ".";
+      $this->redirect('/auth/login');
     }
     catch (\Exception $e) {
       Logger::log("REGISTRATION ERROR: " . $e->getMessage());

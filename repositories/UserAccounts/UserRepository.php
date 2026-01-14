@@ -27,12 +27,22 @@ class UserRepository extends Repository
       ->first();
   }
 
-  /**
-   * Create a new User record
-   */
+  public function findByToken($token) {
+      // Example SQL: SELECT * FROM users WHERE verification_token = :token LIMIT 1
+    return User::where('verification_token', $token)
+      ->first();
+  }
   public function create(array $data)
   {
     return User::create($data);
+  }
+  public function update($id, array $data)
+  {
+    $user = User::find($id);
+    if ($user) {
+      return $user->update($data);
+    }
+    return false;
   }
 
   /**
@@ -93,10 +103,10 @@ class UserRepository extends Repository
 
     try {
       $mail->isSMTP();
-      $mail->Host       = 'smtp.gmail.com'; // Gmail SMTP server
+      $mail->Host       = 'smtp-relay.brevo.com'; // Gmail SMTP server
       $mail->SMTPAuth   = true;
-      $mail->Username   = 'recon21342@gmail.com'; // !!! REPLACE WITH YOUR GMAIL EMAIL !!!
-      $mail->Password   = 'xtdsnpxtjgekndlu';   // !!! REPLACE WITH YOUR GMAIL APP PASSWORD !!!
+      $mail->Username   = 'a0003e001@smtp-brevo.com'; // !!! REPLACE WITH YOUR GMAIL EMAIL !!!
+      $mail->Password   = 'xsmtpsib-a11c9ed7db2150d610c2b9a3a170de3c0908fa98fd4e76d8c4ab2ebeb5d401c7-ZQtowWfKUV37ffpZ';   // !!! REPLACE WITH YOUR GMAIL APP PASSWORD !!!
       $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // Use SMTPS (465)
       $mail->Port       = 465;
 
@@ -113,6 +123,50 @@ class UserRepository extends Repository
       return true;
     } catch (Exception $e) {
       Logger::log("MAILER ERROR: {$mail->ErrorInfo}");
+      return false;
+    }
+  }
+  public function sendVerificationEmail($email, $token)
+  {
+    $mail = new PHPMailer(true);
+
+    try{
+      $mail->isSMTP();
+      $mail->Host       = 'smtp-relay.brevo.com'; // Gmail SMTP server
+      $mail->SMTPAuth   = true;
+      $mail->Username   = 'a0003e001@smtp-brevo.com'; // !!! REPLACE WITH YOUR GMAIL EMAIL !!!
+      $mail->Password   = 'xsmtpsib-a11c9ed7db2150d610c2b9a3a170de3c0908fa98fd4e76d8c4ab2ebeb5d401c7-ZQtowWfKUV37ffpZ';   // !!! REPLACE WITH YOUR GMAIL APP PASSWORD !!!
+      $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // Use SMTPS (465)
+      $mail->Port       = 465;
+
+      $mail->setFrom('recon21342@gmail.com', 'UM ENROLLMENT SYSTEM');
+      $mail->addAddress($email);
+
+      // In UserRepository::sendVerificationEmail
+      $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
+      $host = $_SERVER['HTTP_HOST'];
+
+      // If your project is in a subfolder like 'public', PHP might need help finding the root
+      $verifyLink = $protocol . $host . "/auth/verify-email?token=" . $token;
+
+      $mail->isHTML(true);
+      $mail->Subject = 'Verify Your Account';
+      $mail->Body = "
+        <div style='font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px;'>
+            <h2 style='color: #333;'>Confirm Your Email Address</h2>
+            <p>Hi there,</p>
+            <p>Thank you for signing up for the UM Enrollment System. To complete your registration, please verify your email by clicking the button below:</p>
+            <div style='text-align: center; margin: 30px 0;'>
+                <a href='{$verifyLink}' style='background-color: #007bff; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;'>Verify My Account</a>
+            </div>
+            <p style='font-size: 12px; color: #777;'>If you did not create an account, you can safely ignore this email.</p>
+            <hr style='border: 0; border-top: 1px solid #eee;'>
+            <p style='font-size: 11px; color: #999;'>Sent from UM Enrollment System (Testing)</p>
+        </div>";
+
+    $mail->send();
+  } catch (Exception $e) {
+      Logger::log("MAILER ERROR ON EMAIL VERIFICATION: {$mail->ErrorInfo}");
       return false;
     }
   }
