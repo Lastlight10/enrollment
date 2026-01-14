@@ -103,14 +103,14 @@ class UserRepository extends Repository
 
     try {
       $mail->isSMTP();
-      $mail->Host       = 'smtp-relay.brevo.com'; // Gmail SMTP server
+      $mail->Host       = $_ENV['SMTP_HOST']; 
       $mail->SMTPAuth   = true;
-      $mail->Username   = 'a0003e001@smtp-brevo.com'; // !!! REPLACE WITH YOUR GMAIL EMAIL !!!
-      $mail->Password   = 'xsmtpsib-a11c9ed7db2150d610c2b9a3a170de3c0908fa98fd4e76d8c4ab2ebeb5d401c7-ZQtowWfKUV37ffpZ';   // !!! REPLACE WITH YOUR GMAIL APP PASSWORD !!!
-      $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // Use SMTPS (465)
-      $mail->Port       = 465;
+      $mail->Username   = $_ENV['SMTP_USER']; 
+      $mail->Password   = $_ENV['SMTP_PASS'];   
+      $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; 
+      $mail->Port       = $_ENV['SMTP_PORT'];
 
-      $mail->setFrom('recon21342@gmail.com', 'UM ENROLLMENT SYSTEM');
+      $mail->setFrom($_ENV['SMTP_FROM_EMAIL'], $_ENV['SMTP_FROM_NAME']);
       $mail->addAddress($email);
 
       $mail->isHTML(true);
@@ -132,14 +132,14 @@ class UserRepository extends Repository
 
     try{
       $mail->isSMTP();
-      $mail->Host       = 'smtp-relay.brevo.com'; // Gmail SMTP server
+      $mail->Host       = $_ENV['SMTP_HOST']; 
       $mail->SMTPAuth   = true;
-      $mail->Username   = 'a0003e001@smtp-brevo.com'; // !!! REPLACE WITH YOUR GMAIL EMAIL !!!
-      $mail->Password   = 'xsmtpsib-a11c9ed7db2150d610c2b9a3a170de3c0908fa98fd4e76d8c4ab2ebeb5d401c7-ZQtowWfKUV37ffpZ';   // !!! REPLACE WITH YOUR GMAIL APP PASSWORD !!!
-      $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // Use SMTPS (465)
-      $mail->Port       = 465;
+      $mail->Username   = $_ENV['SMTP_USER']; 
+      $mail->Password   = $_ENV['SMTP_PASS'];   
+      $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; 
+      $mail->Port       = $_ENV['SMTP_PORT'];
 
-      $mail->setFrom('recon21342@gmail.com', 'UM ENROLLMENT SYSTEM');
+      $mail->setFrom($_ENV['SMTP_FROM_EMAIL'], $_ENV['SMTP_FROM_NAME']);
       $mail->addAddress($email);
 
       // In UserRepository::sendVerificationEmail

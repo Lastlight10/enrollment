@@ -11,7 +11,8 @@ use App\Core\Connection;
 
 // Initialize DB Connection
 Connection::init();
-
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
 $router = new Router();
 
 $router->get('/', 'Controllers\HomeController@index');
