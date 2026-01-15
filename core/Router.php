@@ -38,36 +38,38 @@ class Router {
 
     public function route($url) {
         $requestMethod = $_SERVER['REQUEST_METHOD'];
-        
-        // Strip query strings and ensure there is a leading slash
-        $url = parse_url($url, PHP_URL_PATH);
-        $url = '/' . trim($url, '/'); 
+        $url = '/' . trim(parse_url($url, PHP_URL_PATH), '/'); 
 
         foreach ($this->routes as $route) {
-            // Also clean the registered route path for a fair comparison
             $registeredPath = '/' . trim($route['path'], '/');
 
-            if ($registeredPath === $url && $route['method'] === $requestMethod) {
-            return $this->executeHandler($route['handler']);
+            // 1. Convert {id} or {any} placeholders into Regex patterns
+            // This converts "/staff/users/update/{id}" into "#^/staff/users/update/([^/]+)$#"
+            $pattern = preg_replace('/\{[a-zA-Z0-9_]+\}/', '([^/]+)', $registeredPath);
+            $pattern = "#^" . $pattern . "$#";
+
+            if ($route['method'] === $requestMethod && preg_match($pattern, $url, $matches)) {
+                // Remove the first match (the full URL) to keep only the captured parameters
+                array_shift($matches); 
+                return $this->executeHandler($route['handler'], $matches);
             }
         }
 
         return $this->handle404($url);
     }
 
-    private function executeHandler($handler) {
+    private function executeHandler($handler, $params = []) {
         list($controllerName, $method) = explode('@', $handler);
         
-        // Remove "App\\Controllers\\" if you are already providing "Controllers\" in index.php
-        $fullControllerPath = $controllerName; 
-
-        if (class_exists($fullControllerPath)) {
-            $controller = new $fullControllerPath();
+        if (class_exists($controllerName)) {
+            $controller = new $controllerName();
             if (method_exists($controller, $method)) {
-            return $controller->$method();
+                // call_user_func_array allows us to pass the $id from the URL 
+                // directly into the controller's method arguments
+                return call_user_func_array([$controller, $method], $params);
             }
         }
-        return $this->handle404("Class or Method not found: $fullControllerPath@$method");
+        return $this->handle404("Class or Method not found: $controllerName@$method");
     }
     
 

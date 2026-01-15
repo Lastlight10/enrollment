@@ -34,4 +34,18 @@ class User extends Model {
     {
         $this->attributes['password'] = password_hash($value, PASSWORD_BCRYPT);
     }
+    public function getFullNameAttribute()
+    {
+        return "{$this->first_name} {$this->mid_name} {$this->last_name}";
+    }
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class, 'user_id');
+    }
+
+    public function verified()
+    {
+        return $this->hasMany(Payment::class, 'verified_by');
+    }
+    
 }

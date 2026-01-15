@@ -28,7 +28,6 @@ class UserRepository extends Repository
   }
 
   public function findByToken($token) {
-      // Example SQL: SELECT * FROM users WHERE verification_token = :token LIMIT 1
     return User::where('verification_token', $token)
       ->first();
   }
@@ -169,5 +168,27 @@ class UserRepository extends Repository
       Logger::log("MAILER ERROR ON EMAIL VERIFICATION: {$mail->ErrorInfo}");
       return false;
     }
+  }
+  public function createAccount(array $data)
+  {
+    // The repository simply executes the command
+    return User::create($data);
+  }
+
+  public function updateAccount($id, array $data)
+  {
+    $user = User::findOrFail($id);
+    $user->fill($data);
+
+    // Return false if no changes, so the controller knows
+    if (!$user->isDirty()) {
+      return 'no_changes';
+    }
+
+    return $user->save();
+  }
+  public function deleteAccount($id) {
+    $user = User::findOrFail($id);
+    return $user->delete();
   }
 }

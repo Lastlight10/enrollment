@@ -10,25 +10,25 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>
       <?php unset($_SESSION['error']); ?>
-  <?php endif; ?>
+    <?php endif; ?>
 
-  <?php if (isset($success) || isset($_SESSION['success'])): ?>
-      <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i>
-        <?= $success ?? $_SESSION['success'] ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-      <?php unset($_SESSION['success']); ?>
-  <?php endif; ?>
+    <?php if (isset($success) || isset($_SESSION['success'])): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <i class="bi bi-check-circle-fill me-2"></i>
+          <?= $success ?? $_SESSION['success'] ?>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
 
-  <?php if (isset($info) || isset($_SESSION['info'])): ?>
-      <div class="alert alert-info alert-dismissible fade show" role="alert">
-        <i class="bi bi-info-circle-fill me-2"></i>
-        <?= $info ?? $_SESSION['info'] ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-      <?php unset($_SESSION['info']); ?>
-  <?php endif; ?>
+    <?php if (isset($info) || isset($_SESSION['info'])): ?>
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+          <i class="bi bi-info-circle-fill me-2"></i>
+          <?= $info ?? $_SESSION['info'] ?>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php unset($_SESSION['info']); ?>
+    <?php endif; ?>
   </div>
 </div>
 

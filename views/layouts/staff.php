@@ -37,10 +37,36 @@
       <div class="p-4">
         <h4 class="mb-4">Enrollment System</h4>
         <ul class="nav flex-column">
-          <li class="nav-item"><a href="/staff/dashboard" class="nav-link active">Dashboard</a></li>
-          <li class="nav-item"><a href="/staff/students" class="nav-link">Manage Students</a></li>
-          <li class="nav-item"><a href="/staff/curriculum" class="nav-link">Curriculum</a></li>
-          <li class="nav-item"><a href="/staff/reports" class="nav-link">Reports</a></li>
+          <li class="nav-item">
+            <a href="/staff/dashboard" class="nav-link <?= ($title === 'Staff Home') ? 'active' : '' ?>">
+              Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/staff/students" class="nav-link <?= ($title === 'Manage Students') ? 'active' : '' ?>">
+              Manage Students
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/staff/courses" class="nav-link <?= ($title === 'Manage Courses') ? 'active' : '' ?>">
+              Manage Courses
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/staff/subjects" class="nav-link <?= ($title === 'Manage Subjects') ? 'active' : '' ?>">
+              Manage Subjects
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/staff/academic_periods" class="nav-link <?= ($title === 'Academic Periods') ? 'active' : '' ?>">
+              Manage Acadamic Periods
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/staff/user_accounts" class="nav-link <?= ($title === 'Manage Accounts') ? 'active' : '' ?>">
+              Manage Users
+            </a>
+          </li>
         </ul>
         <div class="mt-5">
           <a href="/auth/logout" class="text-danger" onclick="return confirmLogout(event)">

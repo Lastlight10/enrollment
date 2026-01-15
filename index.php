@@ -42,6 +42,26 @@ $router->group('/auth', function($router) {
 $router->group('/staff', function($router) {
   $router->get('/dashboard', 'Controllers\StaffController@dashboard');
 
+  $router->get('/user_accounts', 'Controllers\StaffController@user_accounts');
+  $router->post('/users/create', 'Controllers\StaffController@addAccount');
+  $router->post('/users/update/{id}', 'Controllers\StaffController@updateAccount');
+  $router->get('/users/delete/{id}', 'Controllers\StaffController@deleteAccount');
+
+  $router->get('/courses', 'Controllers\CourseController@courses');
+  $router->post('/courses/create', 'Controllers\CourseController@addCourse');
+  $router->post('/courses/update/{id}', 'Controllers\CourseController@updateCourse');
+  $router->get('/courses/delete/{id}', 'Controllers\CourseController@deleteCourse');
+
+  $router->get('/academic_periods', 'Controllers\AcademicPeriodController@academic_periods');
+  $router->post('/academic_periods/create', 'Controllers\AcademicPeriodController@store');
+  $router->post('/academic_periods/update/{id}', 'Controllers\AcademicPeriodController@update');
+  $router->get('/academic_periods/delete/{id}', 'Controllers\AcademicPeriodController@delete');
+
+  $router->get('/subjects', 'Controllers\SubjectController@subjects');
+  $router->post('/subjects/create', 'Controllers\SubjectController@store');
+  $router->post('/subjects/update/{id}', 'Controllers\SubjectController@update');
+  $router->get('/subjects/delete/{id}', 'Controllers\SubjectController@delete');
+
 });
 
 $router->group('/student', function($router) {
