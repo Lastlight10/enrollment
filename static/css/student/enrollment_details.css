@@ -1,0 +1,68 @@
+/* Container & Layout */
+.breadcrumb-item + .breadcrumb-item::before {
+  content: "•";
+  color: #ccc;
+}
+
+.breadcrumb-item.active {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+/* Card Styling */
+.card {
+  border-radius: 15px !important;
+  border: none;
+}
+
+.card-header {
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+
+/* Table Styling */
+.table thead th {
+  background-color: #f8f9fa;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: #555;
+  border-bottom: none;
+}
+
+.table tbody td {
+  padding: 1rem 0.75rem;
+}
+
+/* Billing Items - Fix for "Stretched" look */
+.payment-item {
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #eef0f2 !important;
+}
+
+.payment-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Upload Area Styling */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.border-dashed {
+  border-style: dashed !important;
+  transition: border-color 0.3s, background-color 0.3s;
+}
+
+.border-dashed:hover {
+  border-color: #0d6efd !important;
+  background-color: #f0f7ff !important;
+}
+
+/* Status Badge Sizes */
+.badge-status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}

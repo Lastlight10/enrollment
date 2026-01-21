@@ -4,6 +4,7 @@ namespace Controllers;
 use App\Repositories\UserAccounts\UserRepository;
 use App\Repositories\StaffRepositories\CourseRepository;
 use App\Core\Controller;
+use App\Core\Request;
 use App\Core\Logger;
 use Exception;
 
@@ -33,40 +34,41 @@ class CourseController extends Controller {
     ]);
   }
 
-  public function addCourse() {
-    try {
-      $this->courseRepo->create($_POST);
-      $_SESSION['success'] = "Course created successfully.";
-    } catch (Exception $e) {
-      Logger::log("Course Create Error: " . $e->getMessage());
-      $_SESSION['error'] = "Failed to create course. Code may already exist.";
+  public function addCourse(Request $request) { // Add Request parameter
+        try {
+            // Use $request->all() instead of $_POST for consistency
+            $this->courseRepo->create($request->all());
+            $_SESSION['success'] = "Course created successfully.";
+        } catch (Exception $e) {
+            Logger::log("Course Create Error: " . $e->getMessage());
+            $_SESSION['error'] = "Failed to create course. Code may already exist.";
+        }
+        $this->redirect('/staff/courses');
     }
-    $this->redirect('/staff/courses');
-  }
 
-  public function updateCourse($id) {
-    try {
-      $result = $this->courseRepo->update($id, $_POST);
+    public function updateCourse(Request $request, $id) { // FIX: Added Request $request
+        try {
+            $result = $this->courseRepo->update($id, $request->all());
 
-      if ($result === 'no_changes') {
-        $_SESSION['info'] = "No changes were made to the course.";
-      } else {
-        $_SESSION['success'] = "Course updated successfully.";
-      }
-    } catch (Exception $e) {
-      Logger::log("Course Update Error: " . $e->getMessage());
-      $_SESSION['error'] = "Failed to update course.";
+            if ($result === 'no_changes') {
+                $_SESSION['info'] = "No changes were made to the course.";
+            } else {
+                $_SESSION['success'] = "Course updated successfully.";
+            }
+        } catch (Exception $e) {
+            Logger::log("Course Update Error: " . $e->getMessage());
+            $_SESSION['error'] = "Failed to update course.";
+        }
+        $this->redirect('/staff/courses');
     }
-    $this->redirect('/staff/courses');
-  }
 
-  public function deleteCourse($id) {
-    try {
-      $this->courseRepo->delete($id);
-      $_SESSION['success'] = "Course deleted successfully.";
-    } catch (Exception $e) {
-      $_SESSION['error'] = "Cannot delete course while subjects or students are linked to it.";
+    public function deleteCourse(Request $request, $id) { // FIX: Added Request $request
+        try {
+            $this->courseRepo->delete($id);
+            $_SESSION['success'] = "Course deleted successfully.";
+        } catch (Exception $e) {
+            $_SESSION['error'] = "Cannot delete course while subjects or students are linked to it.";
+        }
+        $this->redirect('/staff/courses');
     }
-    $this->redirect('/staff/courses');
-  }
 }

@@ -5,6 +5,7 @@
   <title><?= $title ?? 'Staff Portal' ?></title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/static/css/staff/layout.css">
   <style>
     /* Ensure the body and wrapper take full height */
     body, html { height: 100%; margin: 0; }
@@ -43,8 +44,8 @@
             </a>
           </li>
           <li class="nav-item">
-            <a href="/staff/students" class="nav-link <?= ($title === 'Manage Students') ? 'active' : '' ?>">
-              Manage Students
+            <a href="/staff/enrollments" class="nav-link <?= ($title === 'Manage Enrollments') ? 'active' : '' ?>">
+              Manage Enrollments
             </a>
           </li>
           <li class="nav-item">
@@ -60,6 +61,11 @@
           <li class="nav-item">
             <a href="/staff/academic_periods" class="nav-link <?= ($title === 'Academic Periods') ? 'active' : '' ?>">
               Manage Acadamic Periods
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/staff/curriculum" class="nav-link <?= ($title === 'Manage Curriculum') ? 'active' : '' ?>">
+              Manage Curriculum
             </a>
           </li>
           <li class="nav-item">

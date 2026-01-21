@@ -50,10 +50,21 @@ class Connection
         'collation' => 'utf8mb4_unicode_ci',
         'prefix'    => '',
       ]);
-      static::$capsule->setAsGlobal();
 
-      // Setup the Eloquent ORM... (this is important!)
+      // 2. Setup the Eloquent ORM...
       static::$capsule->bootEloquent();
+
+      // 3. THIS IS THE FIX: Register the DB facade
+      // This allows you to use DB::table() or DB::beginTransaction()
+      static::$capsule->setAsGlobal();
+      
+      // If you specifically want to use the DB facade:
+      // class_alias(Capsule::class, 'DB'); // Optional: shortcut alias
+      if (!\Illuminate\Support\Facades\Facade::getFacadeApplication()) {
+        $container = new \Illuminate\Container\Container;
+        $container->instance('db', static::$capsule->getDatabaseManager());
+        \Illuminate\Support\Facades\Facade::setFacadeApplication($container);
+      }
 
       Logger::log("DB_INFO: Database connection and Eloquent ORM successfully set up.");
 

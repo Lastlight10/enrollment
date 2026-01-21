@@ -14,6 +14,11 @@ class SubjectRepository extends Repository {
     return Subject::create($data);
   }
 
+  public function findById($id)
+  {
+    return Subject::find($id);
+  }
+
   public function update($id, array $data) {
     $subject = Subject::findOrFail($id);
     $subject->fill($data);

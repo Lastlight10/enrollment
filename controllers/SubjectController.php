@@ -1,16 +1,20 @@
 <?php
+
 namespace Controllers;
 
 use App\Core\Controller;
+use App\Core\Request; // Added Import
 use App\Repositories\StaffRepositories\SubjectRepository;
 use App\Repositories\StaffRepositories\CourseRepository;
 use Exception;
 
-class SubjectController extends Controller {
+class SubjectController extends Controller
+{
   private $subjectRepo;
   private $courseRepo;
 
-  public function __construct() {
+  public function __construct()
+  {
     if (!isset($_SESSION['user_id']) || ($_SESSION['user_type'] !== 'staff' && $_SESSION['user_type'] !== 'admin')) {
       $_SESSION['error'] = "Unauthorized access.";
       $this->redirect('/auth/login');
@@ -19,17 +23,20 @@ class SubjectController extends Controller {
     $this->courseRepo = new CourseRepository();
   }
 
-  public function subjects() {
+  public function subjects()
+  {
     return $this->staffView('staff/subjects', [
       'subjects' => $this->subjectRepo->all(),
-      'courses' => $this->courseRepo->all(), // Needed for the dropdowns
+      'courses' => $this->courseRepo->all(),
       'title' => 'Manage Subjects'
     ]);
   }
 
-  public function store() {
+  // FIX: Added Request parameter
+  public function store(Request $request)
+  {
     try {
-      $this->subjectRepo->create($_POST);
+      $this->subjectRepo->create($request->all());
       $_SESSION['success'] = "Subject added successfully.";
     } catch (Exception $e) {
       $_SESSION['error'] = "Failed to add subject. Code might already exist.";
@@ -37,9 +44,11 @@ class SubjectController extends Controller {
     $this->redirect('/staff/subjects');
   }
 
-  public function update($id) {
+  // FIX: Added Request parameter before $id
+  public function update(Request $request, $id)
+  {
     try {
-      $result = $this->subjectRepo->update($id, $_POST);
+      $result = $this->subjectRepo->update($id, $request->all());
       if ($result === 'no_changes') {
         $_SESSION['info'] = "No changes made.";
       } else {
@@ -51,7 +60,9 @@ class SubjectController extends Controller {
     $this->redirect('/staff/subjects');
   }
 
-  public function delete($id) {
+  // FIX: Added Request parameter before $id
+  public function delete(Request $request, $id)
+  {
     try {
       $this->subjectRepo->delete($id);
       $_SESSION['success'] = "Subject deleted.";

@@ -42,32 +42,84 @@ $router->group('/auth', function($router) {
 $router->group('/staff', function($router) {
   $router->get('/dashboard', 'Controllers\StaffController@dashboard');
 
-  $router->get('/user_accounts', 'Controllers\StaffController@user_accounts');
-  $router->post('/users/create', 'Controllers\StaffController@addAccount');
-  $router->post('/users/update/{id}', 'Controllers\StaffController@updateAccount');
-  $router->get('/users/delete/{id}', 'Controllers\StaffController@deleteAccount');
+  // User Management
+  $router->group('/users', function($router) {
+    $router->get('', 'Controllers\StaffController@user_accounts'); // /staff/users
+    $router->post('/create', 'Controllers\StaffController@addAccount');
+    $router->post('/update/{id}', 'Controllers\StaffController@updateAccount');
+    $router->get('/delete/{id}', 'Controllers\StaffController@deleteAccount');
+  });
 
-  $router->get('/courses', 'Controllers\CourseController@courses');
-  $router->post('/courses/create', 'Controllers\CourseController@addCourse');
-  $router->post('/courses/update/{id}', 'Controllers\CourseController@updateCourse');
-  $router->get('/courses/delete/{id}', 'Controllers\CourseController@deleteCourse');
+  // Curriculum Management
+  $router->group('/courses', function($router) {
+    $router->get('', 'Controllers\CourseController@courses');
+    $router->post('/create', 'Controllers\CourseController@addCourse');
+    $router->post('/update/{id}', 'Controllers\CourseController@updateCourse');
+    $router->get('/delete/{id}', 'Controllers\CourseController@deleteCourse');
+  });
 
-  $router->get('/academic_periods', 'Controllers\AcademicPeriodController@academic_periods');
-  $router->post('/academic_periods/create', 'Controllers\AcademicPeriodController@store');
-  $router->post('/academic_periods/update/{id}', 'Controllers\AcademicPeriodController@update');
-  $router->get('/academic_periods/delete/{id}', 'Controllers\AcademicPeriodController@delete');
+  $router->group('/academic_periods', function($router) {
+    $router->get('', 'Controllers\AcademicPeriodController@academic_periods');
+    $router->post('/create', 'Controllers\AcademicPeriodController@store');
+    $router->post('/update/{id}', 'Controllers\AcademicPeriodController@update');
+    $router->get('/delete/{id}', 'Controllers\AcademicPeriodController@delete');
+  });
 
-  $router->get('/subjects', 'Controllers\SubjectController@subjects');
-  $router->post('/subjects/create', 'Controllers\SubjectController@store');
-  $router->post('/subjects/update/{id}', 'Controllers\SubjectController@update');
-  $router->get('/subjects/delete/{id}', 'Controllers\SubjectController@delete');
+  $router->group('/subjects', function($router) {
+    $router->get('', 'Controllers\SubjectController@subjects');
+    $router->post('/create', 'Controllers\SubjectController@store');
+    $router->post('/update/{id}', 'Controllers\SubjectController@update');
+    $router->get('/delete/{id}', 'Controllers\SubjectController@delete');
+  });
 
+  // Enrollment & Billing Management
+ $router->group('/enrollments', function($router) {
+    $router->get('', 'Controllers\StaffEnrollmentController@enrollments');
+    
+    // New: Route to view specific enrollment details
+    $router->get('/details/{id}', 'Controllers\StaffEnrollmentController@details');
+    
+    // New: Route to handle rejection with comments
+    $router->post('/reject/{id}', 'Controllers\StaffEnrollmentController@reject');
+
+    $router->get('/approve/{id}', 'Controllers\StaffEnrollmentController@showApproveForm');
+    $router->post('/approve/{id}', 'Controllers\StaffEnrollmentController@approve');
+    $router->post('/drop/{id}', 'Controllers\StaffEnrollmentController@drop');
+    $router->post('/add-payment/{id}', 'Controllers\StaffEnrollmentController@addPayment');
+
+    $router->post('/payments/verify/{id}', 'Controllers\StaffEnrollmentController@verifyPayment');
+  });
+
+  $router->group('/curriculum', function($router) {
+    $router->get('/', 'CurriculumController@index'); 
+    $router->get('/manage/{courseId}', 'CurriculumController@manage');
+    $router->post('/setup', 'CurriculumController@setup'); // New: Initialize curriculum
+    $router->post('/add', 'CurriculumController@store');
+    $router->post('/update', 'CurriculumController@update');
+    $router->post('/delete', 'CurriculumController@destroy');
+    $router->post('/delete-all', 'CurriculumController@wipe'); // New: Wipe all subjects
+  });
 });
 
 $router->group('/student', function($router) {
+  // Main Dashboard
   $router->get('/dashboard', 'Controllers\StudentController@dashboard');
 
+  // Online Enrollment Logic
+  $router->get('/enroll', 'Controllers\StudentEnrollmentController@showForm');
+  $router->post('/enroll/submit', 'Controllers\StudentEnrollmentController@submit');
+  
+  $router->get('/enrollments', 'Controllers\StudentEnrollmentController@index');
+  $router->get('/enrollment/details/{id}', 'Controllers\StudentEnrollmentController@viewDetails');
+
+  $router->post('/payment/upload/{id}', 'Controllers\StudentEnrollmentController@uploadProof');
+
+  // Other Student Actions
+  $router->get('/status', 'Controllers\StudentController@status');
+  $router->get('/curriculum', 'Controllers\StudentController@curriculum');
 });
+
+
 
 // Get the path and strip out any query strings (?key=value)
 $url = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);

@@ -8,6 +8,9 @@ class AcademicPeriodRepository extends Repository {
   public function all() {
     return AcademicPeriod::orderBy('acad_year', 'DESC')->get();
   }
+  public function getActivePeriods() {
+    return AcademicPeriod::where('is_active', 1)->get();
+  }
 
   public function create(array $data) {
     // If this new period is set to active, deactivate all others first
@@ -40,4 +43,5 @@ class AcademicPeriodRepository extends Repository {
   public function delete($id) {
     return AcademicPeriod::destroy($id);
   }
+  
 }

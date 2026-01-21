@@ -2,6 +2,7 @@
 namespace Controllers;
 
 use App\Core\Controller;
+use App\Core\Request;
 use App\Repositories\StaffRepositories\AcademicPeriodRepository;
 use Exception;
 
@@ -31,14 +32,19 @@ class AcademicPeriodController extends Controller {
     ]);
   }
 
-  public function store() {
-    $this->periodRepo->create($_POST);
+  // Add Request $request here
+  public function store(Request $request) {
+    // Better practice: Use $request->all() instead of $_POST
+    $this->periodRepo->create($request->all());
     $_SESSION['success'] = "Academic period added.";
     $this->redirect('/staff/academic_periods');
   }
 
-  public function update($id) {
-    $result = $this->periodRepo->update($id, $_POST);
+  // FIX: Added Request $request. The Router will now put the object here, 
+  // and the URL {id} will correctly go into $id.
+  public function update(Request $request, $id) {
+    $result = $this->periodRepo->update($id, $request->all());
+    
     if ($result === 'no_changes') {
       $_SESSION['info'] = "No changes made.";
     } else {
@@ -46,14 +52,15 @@ class AcademicPeriodController extends Controller {
     }
     $this->redirect('/staff/academic_periods');
   }
-  public function delete($id) {
-  try {
-    $this->periodRepo->delete($id);
-    $_SESSION['success'] = "Academic period deleted successfully.";
-  } catch (Exception $e) {
-    // This triggers if the period is linked to subjects, students, or grades
-    $_SESSION['error'] = "Cannot delete this period because it is currently linked to other records.";
+
+  // FIX: Added Request $request here too
+  public function delete(Request $request, $id) {
+    try {
+      $this->periodRepo->delete($id);
+      $_SESSION['success'] = "Academic period deleted successfully.";
+    } catch (Exception $e) {
+      $_SESSION['error'] = "Cannot delete this period because it is currently linked to other records.";
+    }
+    $this->redirect('/staff/academic_periods');
   }
-  $this->redirect('/staff/academic_periods');
-}
 }

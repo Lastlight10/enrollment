@@ -20,13 +20,36 @@ class StudentController extends Controller {
   }
 
   public function dashboard() {
-    // Fetch student data to make the dashboard dynamic
-    $user = User::find($_SESSION['user_id']);
+  $userId = $_SESSION['user_id'];
+  $user = User::find($userId);
 
-    $this->studentView('student/dashboard', [
-      'title' => 'Student Dashboard',
-      'user_name' => $user->username,
-      'status' => $user->status,
-    ]);
+  // 1. Get Enrollment History (for the table)
+  $enrollmentRepo = new \App\Repositories\StudentRepositories\EnrollmentRepository();
+  $history = $enrollmentRepo->getStudentHistory($userId);
+
+  // 2. Check current enrollment status for the progress bar
+  // We'll assume the latest enrollment represents the current status
+  $currentEnrollment = $history->first(); 
+  $is_paid = false;
+  if ($currentEnrollment) {
+    // Check if there are any verified payments for this enrollment
+    $is_paid = $currentEnrollment->payments()->where('status', 'verified')->exists();
   }
+
+  // 3. Get data for the Modal dropdowns
+  $periodRepo = new \App\Repositories\StaffRepositories\AcademicPeriodRepository();
+  $courseRepo = new \App\Repositories\StaffRepositories\CourseRepository();
+  $subjectRepo = new \App\Repositories\StaffRepositories\SubjectRepository();
+
+  $this->studentView('student/dashboard', [
+    'title'     => 'Student Dashboard',
+    'user_name' => $user->username,
+    'status'    => $user->status,
+    'history'   => $history,
+    'is_paid'   => $is_paid,
+    'periods'   => $periodRepo->all(),
+    'courses'   => $courseRepo->all(),
+    'subjects'  => $subjectRepo->all()
+  ]);
+}
 }
