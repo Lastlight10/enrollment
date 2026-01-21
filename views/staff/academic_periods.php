@@ -88,7 +88,13 @@
       <div class="modal-body">
         <div class="mb-3">
           <label class="form-label small fw-bold">Academic Year</label>
-          <input type="text" name="acad_year" class="form-control" placeholder="e.g., 2025-2026" required>
+          <input type="text" name="acad_year" class="form-control"
+          placeholder="e.g., 2025-2026"
+          required
+          maxlength="9"
+          pattern="[0-9]{4}-[0-9]{4}"
+          oninput="this.value = this.value.replace(/[^0-9-]/g, '');"
+          title="Please enter the format YYYY-YYYY (numbers and hyphen only)">
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold">Semester</label>
@@ -121,7 +127,13 @@
       <div class="modal-body">
         <div class="mb-3">
           <label class="form-label small fw-bold">Academic Year</label>
-          <input type="text" name="acad_year" id="edit_acad_year" class="form-control" required>
+          <input type="text" name="acad_year" id="edit_acad_year" class="form-control"
+          placeholder="e.g., 2025-2026"
+          required
+          maxlength="9"
+          pattern="[0-9]{4}-[0-9]{4}"
+          oninput="this.value = this.value.replace(/[^0-9-]/g, '');"
+          title="Please enter the format YYYY-YYYY (numbers and hyphen only)">
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold">Semester</label>

@@ -98,16 +98,31 @@
         <div class="row">
           <div class="col-md-8 mb-3">
             <label class="form-label small fw-bold">Subject Code</label>
-            <input type="text" name="subject_code" class="form-control" placeholder="e.g., IPT101" required>
+            <input 
+                type="text" 
+                name="subject_code" 
+                class="form-control text-uppercase" 
+                placeholder="e.g., IPT 101" 
+                required 
+                pattern="^[A-Z0-9\s]+$" 
+                title="Only capital letters, numbers, and spaces are allowed"
+                oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9\s]/g, '');"
+                maxlength="10"
+            >
           </div>
           <div class="col-md-4 mb-3">
             <label class="form-label small fw-bold">Units</label>
-            <input type="number" name="units" class="form-control" min="1" max="6" value="3" required>
+            <input type="number" name="units" class="form-control" min="1" max="3" value="0" required
+              min="1" 
+              max="3" 
+              required 
+              oninput="if(this.value > 3) this.value = 3; if(this.value.length > 1) this.value = this.value.slice(0, 1);"
+              onkeypress="return /[1-3]/.test(event.key)">
           </div>
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold">Subject Title</label>
-          <input type="text" name="subject_title" class="form-control" placeholder="e.g., Integrative Programming" required>
+          <input type="text" name="subject_title" class="form-control" placeholder="e.g., Integrative Programming" required maxlength="50">
         </div>
       </div>
       <div class="modal-footer">
@@ -137,16 +152,30 @@
         <div class="row">
           <div class="col-md-8 mb-3">
             <label class="form-label small fw-bold">Subject Code</label>
-            <input type="text" name="subject_code" id="edit_subject_code" class="form-control" required>
+            <input type="text" name="subject_code" id="edit_subject_code" class="form-control"
+              required
+              pattern="^[A-Z0-9\s]+$" 
+              title="Only capital letters, numbers, and spaces are allowed"
+              oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9\s]/g, '');"
+              maxlength="10">
           </div>
           <div class="col-md-4 mb-3">
             <label class="form-label small fw-bold">Units</label>
-            <input type="number" name="units" id="edit_units" class="form-control" required>
+            <input 
+              type="number" 
+              name="units" 
+              id="edit_units" 
+              class="form-control" 
+              min="1" 
+              max="3" 
+              required 
+              oninput="if(this.value > 3) this.value = 3; if(this.value.length > 1) this.value = this.value.slice(0, 1);"
+              onkeypress="return /[1-3]/.test(event.key)">
           </div>
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold">Subject Title</label>
-          <input type="text" name="subject_title" id="edit_subject_title" class="form-control" required>
+          <input type="text" name="subject_title" id="edit_subject_title" class="form-control" required maxlength="50">
         </div>
       </div>
       <div class="modal-footer">

@@ -93,31 +93,41 @@
         <div class="row g-3">
           <div class="col-md-4">
             <label class="form-label small fw-bold">First Name</label>
-            <input type="text" name="first_name" class="form-control" required>
+            <input type="text" name="first_name" class="form-control" required maxlength="30"
+            pattern="^[A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '');">
           </div>
           <div class="col-md-4">
             <label class="form-label small fw-bold">Middle Name</label>
-            <input type="text" name="mid_name" class="form-control">
+            <input type="text" name="mid_name" class="form-control" maxlength="20"
+             pattern="^[A-Za-z]+$" oninput="this.value = this.value.replace(/[^A-Za-z]/g, '');">
           </div>
           <div class="col-md-4">
             <label class="form-label small fw-bold">Last Name</label>
-            <input type="text" name="last_name" class="form-control" required>
+            <input type="text" name="last_name" class="form-control" required maxlength="30"
+            pattern="^[A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '');">
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Username</label>
-            <input type="text" name="username" class="form-control" required>
+            <input type="text" name="username" class="form-control" required maxlength="30" pattern="^[a-zA-Z0-9]+$" 
+              oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '');">
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Email</label>
-            <input type="email" name="email" class="form-control" required>
+            <input type="email" name="email" class="form-control" required maxlength="50">
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Password</label>
-            <input type="password" name="password" class="form-control" required>
+            <div class="input-group">
+              <input type="password" name="password" id="add_password" class="form-control" required maxlength="30"
+               pattern="^[a-zA-Z0-9]+$" oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '');">
+              <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                <i class="bi bi-eye" id="toggleIcon"></i>
+              </button>
+            </div>
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Birth Date</label>
-            <input type="date" name="birth_date" class="form-control">
+            <input type="date" name="birth_date" class="form-control" required>
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Account Type</label>
@@ -152,23 +162,27 @@
         <div class="row g-3">
           <div class="col-md-4">
             <label class="form-label small fw-bold">First Name</label>
-            <input type="text" name="first_name" id="edit_first_name" class="form-control" required>
+            <input type="text" name="first_name" id="edit_first_name" class="form-control" required maxlength="30"
+              pattern="^[A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '');">
           </div>
           <div class="col-md-4">
             <label class="form-label small fw-bold">Middle Name</label>
-            <input type="text" name="mid_name" id="edit_mid_name" class="form-control">
+            <input type="text" name="mid_name" id="edit_mid_name" class="form-control" maxlength="20"
+              pattern="^[A-Za-z]+$" oninput="this.value = this.value.replace(/[^A-Za-z]/g, '');">
           </div>
           <div class="col-md-4">
             <label class="form-label small fw-bold">Last Name</label>
-            <input type="text" name="last_name" id="edit_last_name" class="form-control" required>
+            <input type="text" name="last_name" id="edit_last_name" class="form-control" required maxlength="30"
+              pattern="^[A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '');">
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Username</label>
-            <input type="text" name="username" id="edit_username" class="form-control" required>
+            <input type="text" name="username" id="edit_username" class="form-control" required maxlength="30"
+              pattern="^[0-9A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '');">
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Email</label>
-            <input type="email" name="email" id="edit_email" class="form-control" required>
+            <input type="email" name="email" id="edit_email" class="form-control" required maxlength="50">
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Account Type</label>
@@ -197,6 +211,23 @@
 </div>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function () {
+    const togglePassword = document.querySelector('#togglePassword');
+    const passwordInput = document.querySelector('#add_password');
+    const toggleIcon = document.querySelector('#toggleIcon');
+
+    if (togglePassword) {
+      togglePassword.addEventListener('click', function () {
+        // Toggle the type attribute
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        // Toggle the icon
+        toggleIcon.classList.toggle('bi-eye');
+        toggleIcon.classList.toggle('bi-eye-slash');
+      });
+    }
+  });
   function confirmDelete(id) {
     if (confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
       window.location.href = '/staff/users/delete/' + id;

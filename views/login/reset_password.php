@@ -34,12 +34,12 @@
 
         <div class="mb-3">
             <label class="form-label">New Password</label>
-            <input type="password" name="password" class="form-control form-control-lg" placeholder="Enter new password" required autofocus>
+            <input type="password" name="password" class="form-control form-control-lg" placeholder="Enter new password" required autofocus maxlength="30">
         </div>
 
         <div class="mb-4">
             <label class="form-label">Confirm Password</label>
-            <input type="password" name="confirm_password" class="form-control form-control-lg" placeholder="Confirm new password" required>
+            <input type="password" name="confirm_password" class="form-control form-control-lg" placeholder="Confirm new password" required maxlength="30">
         </div>
 
         <div class="d-grid">

@@ -36,7 +36,7 @@
             <label for="email" class="form-label">Email Address</label>
             <input type="email" name="email" id="email" 
                    class="form-control form-control-lg" 
-                   placeholder="Enter your email" required autofocus>
+                   placeholder="Enter your email" required autofocus maxlength="50">
         </div>
 
         <div class="d-grid gap-2">

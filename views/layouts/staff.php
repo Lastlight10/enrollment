@@ -69,7 +69,7 @@
             </a>
           </li>
           <li class="nav-item">
-            <a href="/staff/user_accounts" class="nav-link <?= ($title === 'Manage Accounts') ? 'active' : '' ?>">
+            <a href="/staff/users" class="nav-link <?= ($title === 'Manage Accounts') ? 'active' : '' ?>">
               Manage Users
             </a>
           </li>

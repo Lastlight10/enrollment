@@ -136,7 +136,16 @@
             </div>
             <div class="col-4">
               <label class="form-label x-small mb-1">Amount</label>
-              <input type="number" name="fees[0][amount]" class="form-control border-0 shadow-sm" placeholder="0.00" step="0.01" required>
+              <input 
+                  type="number" 
+                  name="fees[0][amount]" 
+                  class="form-control border-0 shadow-sm" 
+                  placeholder="0.00" 
+                  step="0.01" 
+                  required 
+                  min="0.01" 
+                  max="99999"
+                  oninput="if(this.value.length > 5) this.value = this.value.slice(0, 5);">
             </div>
             <div class="col-1 text-end">
               <button type="button" class="btn btn-link text-danger p-0" onclick="removeRow(this)">
@@ -149,9 +158,15 @@
           <i class="bi bi-plus-circle me-1"></i> Add Fee Component
         </button>
       </div>
-      <div class="modal-footer border-0 bg-white">
-        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm">Confirm & Enroll</button>
+      <div class="modal-footer border-0 bg-white d-flex justify-content-between align-items-center">
+        <div class="fw-bold text-primary h5 mb-0" id="live-total">
+          Total: ₱0.00
+        </div>
+        
+        <div>
+          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm">Confirm & Enroll</button>
+        </div>
       </div>
     </form>
   </div>
@@ -168,11 +183,37 @@
   let enrollModalInstance = null;
   let rejectModalInstance = null;
 
+  // 1. Live Total Calculation Logic
+  function updateLiveTotal() {
+    let total = 0;
+    document.querySelectorAll('.fee-row input[type="number"]').forEach(input => {
+      total += parseFloat(input.value) || 0;
+    });
+    const totalDisplay = document.getElementById('live-total');
+    if (totalDisplay) {
+      totalDisplay.innerText = 'Total: ₱' + total.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+  }
+
+  // Attach listener to the modal to catch all input changes
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('enrollModal');
+    if (modal) {
+      modal.addEventListener('input', updateLiveTotal);
+    }
+  });
+
   function openEnrollModal(id, name) {
     const form = document.getElementById('enrollForm');
     form.action = '/staff/enrollments/approve/' + id;
     document.getElementById('studentName').innerText = name;
     if (!enrollModalInstance) enrollModalInstance = new bootstrap.Modal(document.getElementById('enrollModal'));
+    
+    // Reset total on open
+    updateLiveTotal();
     enrollModalInstance.show();
   }
 
@@ -188,6 +229,8 @@
     const container = document.getElementById('fee-container');
     const div = document.createElement('div');
     div.className = 'row g-2 mb-2 fee-row align-items-end';
+    
+    // Added the min, max, and oninput logic to the template below
     div.innerHTML = `
       <div class="col-7">
         <select name="fees[${feeIndex}][type]" class="form-select border-0 shadow-sm" required>
@@ -199,7 +242,16 @@
         </select>
       </div>
       <div class="col-4">
-        <input type="number" name="fees[${feeIndex}][amount]" class="form-control border-0 shadow-sm" placeholder="0.00" step="0.01" required>
+        <input 
+          type="number" 
+          name="fees[${feeIndex}][amount]" 
+          class="form-control border-0 shadow-sm" 
+          placeholder="0.00" 
+          step="0.01" 
+          required 
+          min="0.01" 
+          max="999999"
+          oninput="if(this.value.length > 8) this.value = this.value.slice(0, 8);">
       </div>
       <div class="col-1 text-end">
         <button type="button" class="btn btn-link text-danger p-0" onclick="removeRow(this)">
@@ -213,6 +265,9 @@
 
   function removeRow(btn) {
     const rows = document.querySelectorAll('.fee-row');
-    if (rows.length > 1) btn.closest('.fee-row').remove();
+    if (rows.length > 1) {
+      btn.closest('.fee-row').remove();
+      updateLiveTotal(); // Recalculate after removing a row
+    }
   }
 </script>

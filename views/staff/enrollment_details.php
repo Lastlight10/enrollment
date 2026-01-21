@@ -50,7 +50,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach($e->payments as $p): ?>
+                            <?php 
+                                $totalFees = 0; 
+                                foreach($e->payments as $p): 
+                                $totalFees += $p->amount;
+                            ?>
                                 <tr>
                                     <td class="ps-3 small fw-bold"><?= ucfirst($p->payment_type) ?></td>
                                     <td class="small">₱<?= number_format($p->amount, 2) ?></td>
@@ -69,6 +73,14 @@
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td class="ps-3 fw-bold small">TOTAL FEES</td>
+                                <td colspan="2" class="ps-2 fw-bold text-primary">
+                                    ₱<?= number_format($totalFees, 2) ?>
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
                 <?php endif; ?>
             </div>
@@ -212,15 +224,34 @@
                             </select>
                         </div>
                         <div class="col-4">
-                            <input type="number" name="fees[0][amount]" class="form-control border-0 shadow-sm" step="0.01" required placeholder="0.00">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-0 shadow-sm">₱</span>
+                                <input 
+                                type="number" 
+                                name="fees[0][amount]" 
+                                class="form-control border-0 shadow-sm" 
+                                step="0.01" 
+                                required 
+                                placeholder="0.00" 
+                                min="0" 
+                                max="99999" 
+                                oninput="if(this.value.length > 5) this.value = this.value.slice(0, 5);">
+                            </div>
                         </div>
                     </div>
                 </div>
+                
                 <button type="button" class="btn btn-sm btn-outline-secondary w-100 mt-3" onclick="addRow()">+ Add Fee Row</button>
             </div>
-            <div class="modal-footer border-0 bg-white">
-                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary rounded-pill px-4">Confirm & Enroll</button>
+            <div class="modal-footer border-0 bg-white d-flex justify-content-between align-items-center">
+                <div class="fw-bold text-primary h5 mb-0" id="live-total">
+                    Total: ₱0.00
+                </div>
+                
+                <div>
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Confirm & Enroll</button>
+                </div>
             </div>
         </form>
     </div>
@@ -229,6 +260,16 @@
 
 
 <script>
+    // Add this to your <script> section
+    document.getElementById('enrollModal').addEventListener('input', function() {
+        let total = 0;
+        document.querySelectorAll('.fee-row input[type="number"]').forEach(input => {
+            total += parseFloat(input.value) || 0;
+        });
+        // Assuming you add an element with id="live-total" in your modal footer
+        const totalDisplay = document.getElementById('live-total');
+        if(totalDisplay) totalDisplay.innerText = 'Total: ₱' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
+    });
     let enrollModalInstance = null;
     let rejectModalInstance = null;
     let paymentReviewModalInstance = null;
@@ -276,6 +317,8 @@
         const container = document.getElementById('fee-container');
         const div = document.createElement('div');
         div.className = 'row g-2 mb-2 fee-row align-items-end';
+        
+        // We use the current feeIndex to ensure the name="fees[x]" is unique for PHP
         div.innerHTML = `
             <div class="col-7">
                 <select name="fees[${feeIndex}][type]" class="form-select border-0 shadow-sm" required>
@@ -287,7 +330,18 @@
                 </select>
             </div>
             <div class="col-4">
-                <input type="number" name="fees[${feeIndex}][amount]" class="form-control border-0 shadow-sm" placeholder="0.00" step="0.01" required>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-0 shadow-sm">₱</span>
+                    <input 
+                        type="number" 
+                        name="fees[${feeIndex}][amount]" 
+                        class="form-control border-0 shadow-sm" 
+                        step="0.01" 
+                        required 
+                        placeholder="0.00" 
+                        min="0.01" 
+                        oninput="if(this.value.length > 8) this.value = this.value.slice(0, 8);">
+                </div>
             </div>
             <div class="col-1 text-end">
                 <button type="button" class="btn btn-link text-danger p-0" onclick="removeRow(this)">
@@ -296,11 +350,32 @@
             </div>
         `;
         container.appendChild(div);
-        feeIndex++;
+        feeIndex++; // Increment to prevent key collision on next add
     }
 
     function removeRow(btn) {
         const rows = document.querySelectorAll('.fee-row');
-        if (rows.length > 1) btn.closest('.fee-row').remove();
+        if (rows.length > 1) {
+            btn.closest('.fee-row').remove();
+            updateLiveTotal(); 
+        }
     }
+
+    // Extract calculation to a reusable function
+    function updateLiveTotal() {
+        let total = 0;
+        document.querySelectorAll('.fee-row input[type="number"]').forEach(input => {
+            total += parseFloat(input.value) || 0;
+        });
+        const totalDisplay = document.getElementById('live-total');
+        if(totalDisplay) {
+            totalDisplay.innerText = 'Total: ₱' + total.toLocaleString(undefined, {
+                minimumFractionDigits: 2, 
+                maximumFractionDigits: 2
+            });
+        }
+    }
+
+    // Update your event listener to use the new function
+    document.getElementById('enrollModal').addEventListener('input', updateLiveTotal);
 </script>

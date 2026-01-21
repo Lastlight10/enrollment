@@ -82,11 +82,29 @@
       <div class="modal-body">
         <div class="mb-3">
           <label class="form-label small fw-bold">Course Code</label>
-          <input type="text" name="course_code" class="form-control" placeholder="e.g., BSIT" required>
+          <input 
+            type="text" 
+            name="course_code" 
+            class="form-control" 
+            placeholder="e.g., BSIT" 
+            required 
+            maxlength="5"
+            pattern="[A-Z]{1,5}"
+            oninput="this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '');"
+            title="Please use capital letters only (max 5 characters)">
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold">Course Name</label>
-          <input type="text" name="course_name" class="form-control" placeholder="e.g., BS Information Technology" required>
+          <input 
+            type="text" 
+            name="course_name" 
+            class="form-control" 
+            placeholder="e.g., BS Information Technology" 
+            required
+            pattern="[A-Za-z\s]+"
+            oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '');"
+            title="Please enter letters and spaces only"
+            maxlength="50">
         </div>
       </div>
       <div class="modal-footer">
@@ -107,11 +125,22 @@
       <div class="modal-body">
         <div class="mb-3">
           <label class="form-label small fw-bold">Course Code</label>
-          <input type="text" name="course_code" id="edit_course_code" class="form-control" required>
+          <input type="text" name="course_code" id="edit_course_code" class="form-control" required
+            placeholder="e.g., BSIT" 
+            maxlength="5"
+            pattern="[A-Z]{1,5}"
+            oninput="this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '');"
+            title="Please use capital letters only (max 5 characters)">
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold">Course Name</label>
-          <input type="text" name="course_name" id="edit_course_name" class="form-control" required>
+          <input type="text" name="course_name" id="edit_course_name" class="form-control" required
+            placeholder="e.g., BS Information Technology" 
+            required
+            pattern="[A-Za-z\s]+"
+            oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '');"
+            title="Please enter letters and spaces only"
+            maxlength="50">
         </div>
       </div>
       <div class="modal-footer">

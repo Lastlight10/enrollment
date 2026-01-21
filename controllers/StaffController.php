@@ -6,6 +6,8 @@ use App\Core\Controller;
 use App\Core\Logger;
 use App\Core\Request; // Import Request
 use Models\User;
+use Models\Payment;
+use Models\Enrollment;
 use App\Repositories\UserAccounts\UserRepository;
 use Exception;
 
@@ -29,10 +31,30 @@ class StaffController extends Controller
 
   public function dashboard()
   {
-    $this->staffView('staff/dashboard', [
-      'title' => 'Staff Home',
-      'user_id' => $_SESSION['user_id']
-    ]);
+      // Assuming you have models for User, Enrollment, and Payment
+      $activeStudents = User::where('type', 'student')->where('status', 'active')->count();
+      $pendingEnrollments = Enrollment::where('status', 'pending')->count();
+      
+      // Payment Statistics
+      $paidPayments = Payment::where('status', 'paid')->count();
+      $unpaidPayments = Payment::where('status', 'unpaid')->count();
+      $totalRevenue = Payment::where('status', 'paid')->sum('amount');
+
+      // Recent Enrollments for the table
+      $recent = Enrollment::with(['user', 'course'])
+                  ->orderBy('created_at', 'DESC')
+                  ->limit(5)
+                  ->get();
+
+      $this->staffView('staff/dashboard', [
+          'title'             => 'Staff Home',
+          'activeCount'       => $activeStudents,
+          'pendingCount'      => $pendingEnrollments,
+          'paidCount'         => $paidPayments,
+          'unpaidCount'       => $unpaidPayments,
+          'totalRevenue'      => $totalRevenue,
+          'recentEnrollments' => $recent
+      ]);
   }
 
   public function user_accounts()

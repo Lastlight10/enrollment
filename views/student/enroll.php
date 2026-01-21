@@ -104,7 +104,7 @@
         <div class="card shadow-sm border-0 mb-4">
           <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-bold">Available Subjects</h5>
-            <input type="text" id="subjectSearch" class="form-control form-control-sm w-50" placeholder="Search by code or name...">
+            <input type="text" id="subjectSearch" class="form-control form-control-sm w-50" placeholder="Search by code or name..." maxlength="30">
           </div>
           <div class="table-responsive" style="max-height: 350px;">
             <table class="table table-hover align-middle mb-0" id="availableTable">

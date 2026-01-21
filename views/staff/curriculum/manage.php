@@ -21,7 +21,7 @@
     <div class="d-flex gap-2">
       <div class="input-group input-group-sm" style="width: 250px;">
         <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
-        <input type="text" id="subjectSearch" class="form-control border-start-0" placeholder="Search subjects...">
+        <input type="text" id="subjectSearch" class="form-control border-start-0" placeholder="Search subjects..." maxlength="30">
       </div>
       <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
         <i class="bi bi-plus-lg"></i> Add Subject
