@@ -21,8 +21,9 @@ class Router {
   }
 
   public function add($method, $path, $handler) {
-    $fullPath = $this->groupPrefix . $path;
-    $fullPath = '/' . ltrim($fullPath, '/'); 
+    $fullPath = '/' . trim($this->groupPrefix, '/') . '/' . trim($path, '/');
+    
+    $fullPath = preg_replace('#/+#', '/', $fullPath);
 
     $this->routes[] = [
       'method' => strtoupper($method),

@@ -124,17 +124,19 @@ $router->group('/student', function($router) {
 });
 
 
-
-// Get the path and strip out any query strings (?key=value)
+// Get the path
 $url = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// If you are working in a subfolder (e.g., localhost/enrollment/), 
-// you need to remove that folder name from the URL so the router only sees '/'
-$scriptName = dirname($_SERVER['SCRIPT_NAME']);
-$url = str_replace($scriptName, '', $url);
+// Get the base directory (e.g., / or /subfolder)
+$basePath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
 
-// Ensure it starts with / and isn't empty
-$url = '/' . ltrim($url, '/');
+// Only remove the base path from the START of the URL
+if ($basePath !== '/' && strpos($url, $basePath) === 0) {
+    $url = substr($url, strlen($basePath));
+}
+
+// Ensure the result always starts with a single / and has no trailing slash
+$url = '/' . trim($url, '/');
 
 $router->route($url);
 
