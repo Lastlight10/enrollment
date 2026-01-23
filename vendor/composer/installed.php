@@ -3,7 +3,7 @@
         'name' => 'my-vendor/enrollment',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '9d661498b9b9e1a061d7b8f66d0bb0b781e9146a',
+        'reference' => '2854bd3f820a4df5004bc58be0d18ccb833860e8',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -157,7 +157,7 @@
         'my-vendor/enrollment' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '9d661498b9b9e1a061d7b8f66d0bb0b781e9146a',
+            'reference' => '2854bd3f820a4df5004bc58be0d18ccb833860e8',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
