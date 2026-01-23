@@ -4,6 +4,7 @@ namespace Controllers;
 
 use App\Core\Controller;
 use App\Core\Request;
+use Models\Enrollment;
 use App\Core\Router;
 use App\Repositories\StudentRepositories\EnrollmentRepository as StudentEnrollmentRepo;
 use App\Repositories\StaffRepositories\AcademicPeriodRepository;
@@ -151,5 +152,49 @@ public function viewDetails(Request $request, $id)
     $redirectPath = $enrollmentId ? "/student/enrollment/details/$enrollmentId" : "/student/dashboard";
     
     return $this->redirect($redirectPath);
+  }
+  // In your EnrollmentController.php
+  public function downloadPdf(Request $request, $id)
+  {
+      try {
+          // 1. Fetch data using your existing repository logic
+          $enrollment = $this->enrollRepo->findForStudent($_SESSION['user_id'], $id);
+
+          if (!$enrollment) {
+              $_SESSION['error'] = "Record not found or access denied.";
+              return $this->redirect('/student/dashboard');
+          }
+
+          // 2. Setup Dompdf (ensure 'vendor/autoload.php' is loaded in your index.php)
+          $options = new \Dompdf\Options();
+          $options->set('isRemoteEnabled', true); // Critical for loading CSS/Images
+          $options->set('defaultFont', 'DejaVu Sans');
+          
+          $dompdf = new \Dompdf\Dompdf($options);
+
+          // 3. Render the HTML content 
+          // We pass the $enrollment data (aliased as $e) to a separate view file
+          $e = $enrollment; 
+          
+          // Use output buffering to capture the HTML from a view file
+          ob_start();
+          // Adjust this path to wherever you store your PDF templates
+          include __DIR__ . '/../views/student/pdf_template.php';
+          $html = ob_get_clean();
+
+          // 4. Dompdf processing
+          $dompdf->loadHtml($html);
+          $dompdf->setPaper('Letter', 'portrait');
+          $dompdf->render();
+
+          // 5. Output PDF to Browser
+          // "Attachment" => false opens it in the browser; true forces download
+          $dompdf->stream("Enrollment_Ref_{$id}.pdf", ["Attachment" => false]);
+          exit;
+
+      } catch (Exception $e) {
+          $_SESSION['error'] = "PDF Generation Error: " . $e->getMessage();
+          return $this->redirect("/student/enrollment/details/$id");
+      }
   }
 }

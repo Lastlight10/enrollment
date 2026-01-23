@@ -53,6 +53,7 @@ class AuthController extends Controller
 
       $_SESSION['user_id'] = $user->id;
       $_SESSION['user_type'] = $user->type;
+       $_SESSION['user_name'] = $user->username;
 
       Logger::log("LOGIN SUCCESS: User {$user->username} logged in.");
       $_SESSION['success'] = "Successfully logged in as " . $user->username;

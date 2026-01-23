@@ -13,6 +13,11 @@
     </div>
   <?php endif; ?>
 <?php endforeach; ?>
+<div class="mb-3 no-print">
+      <a href="/staff/enrollments/print/pdf/<?= $e->id ?>" target="_blank" class="btn btn-danger shadow-sm">
+        <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download Official PDF
+      </a>
+    </div>
 <div class="row g-4">
     <div class="col-md-4">
         <div class="card border-0 shadow-sm mb-4">
@@ -21,8 +26,14 @@
                 <p class="mb-1 text-muted small">NAME</p>
                 <p class="fw-bold"><?= htmlspecialchars($e->user?->full_name ?? 'Unknown') ?></p>
                 
-                <p class="mb-1 text-muted small">USERNAME / ID</p>
+                <p class="mb-1 text-muted small">USERNAME</p>
                 <p class="fw-bold"><?= htmlspecialchars($e->user?->username ?? 'N/A') ?></p>
+
+                <p class="mb-1 text-muted small">ID NUMBER</p>
+                <p class="fw-bold"><?= htmlspecialchars($e->id_number ?? 'N/A') ?></p>
+
+                <p class="mb-1 text-muted small">SCHOLARSHIP</p>
+                <p class="fw-bold"><?= htmlspecialchars($e->scholar_type ?? 'N/A') ?></p>
                 
                 <hr>
                 

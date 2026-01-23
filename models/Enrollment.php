@@ -12,6 +12,7 @@ class Enrollment extends Model {
     'period_id',
     'course_id',
     'grade_year',
+    'id_number',
     'scholar_type',
     'status'
   ];

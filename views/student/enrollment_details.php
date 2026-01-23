@@ -5,10 +5,13 @@
       <a href="/student/dashboard" class="btn btn-link text-decoration-none p-0">
         <i class="bi bi-arrow-left"></i> Back to Dashboard
       </a>
+      
       <h2 class="mt-2 fw-bold">Enrollment Details</h2>
       <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
           <li class="breadcrumb-item active">Ref #<?= $e->id ?></li>
+          <li class="breadcrumb-item active">ID Number: <?= htmlspecialchars(string: $e->grade_year) ?></li>
+          <li class="breadcrumb-item active">Scholar Type: <?= htmlspecialchars(string: $e->scholar_type) ?></li>
           <li class="breadcrumb-item active"><?= htmlspecialchars($e->course?->course_name) ?></li>
           <li class="breadcrumb-item active">Academic Year: <?= htmlspecialchars(string: $e->period?->acad_year) ?></li>
           <li class="breadcrumb-item active">Semester: <?= htmlspecialchars(string: $e->period?->semester) ?></li>
@@ -22,6 +25,11 @@
       </span>
     </div>
   </div>
+    <div class="mb-3 no-print">
+      <a href="/student/enrollment/pdf/<?= $e->id ?>" target="_blank" class="btn btn-danger shadow-sm">
+        <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download Official PDF
+      </a>
+    </div>
 
   <div class="row g-4">
     <div class="col-md-8">

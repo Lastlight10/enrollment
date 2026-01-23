@@ -88,6 +88,7 @@ $router->group('/staff', function($router) {
     $router->post('/add-payment/{id}', 'Controllers\StaffEnrollmentController@addPayment');
 
     $router->post('/payments/verify/{id}', 'Controllers\StaffEnrollmentController@verifyPayment');
+    $router->get('/print/pdf/{id}', 'Controllers\StaffEnrollmentController@downloadPdf');
   });
 
   $router->group('/curriculum', function($router) {
@@ -111,12 +112,15 @@ $router->group('/student', function($router) {
   
   $router->get('/enrollments', 'Controllers\StudentEnrollmentController@index');
   $router->get('/enrollment/details/{id}', 'Controllers\StudentEnrollmentController@viewDetails');
+  $router->get('/enrollment/pdf/{id}', 'Controllers\StudentEnrollmentController@downloadPdf');
 
   $router->post('/payment/upload/{id}', 'Controllers\StudentEnrollmentController@uploadProof');
 
   // Other Student Actions
   $router->get('/status', 'Controllers\StudentController@status');
   $router->get('/curriculum', 'Controllers\StudentController@curriculum');
+
+  
 });
 
 

@@ -83,6 +83,14 @@ class EnrollmentRepository extends Repository{
         'verified_by' => $data['verified_by'],
     ]);
 }
+public function findForStudent($userId, $enrollmentId)
+  {
+    // Changed 'users' to 'user' assuming a standard BelongsTo relationship
+    return Enrollment::with(['course', 'subjects', 'payments', 'user']) 
+      ->where('user_id', $userId)
+      ->where('id', $enrollmentId)
+      ->first();
+  }
   
 }
 ?>

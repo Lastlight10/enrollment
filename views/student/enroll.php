@@ -64,6 +64,20 @@
               </select>
             </div>
             <div class="mb-3">
+              <label class="form-label fw-bold">ID Number</label>
+              <input 
+                type="text" 
+                name="id_number" 
+                id="id_number" 
+                class="form-control" 
+                required 
+                minlength="7"
+                maxlength="7" 
+                pattern="\d{7}" 
+                title="ID Number must be exactly 7 digits (e.g., 2500123)"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+            </div>
+            <div class="mb-3">
                 <label class="form-label fw-bold">Year Level</label>
                 <select name="grade_year" class="form-select" required>
                     <option value="1st Year">1st Year</option>
@@ -77,7 +91,7 @@
             <div class="mb-4">
               <label class="form-label fw-bold">Scholarship</label>
               <select name="scholar_type" class="form-select" required>
-                <option value="non-scholar">Regular</option>
+                <option value="non-scholar">Non Scholar</option>
                 <option value="scholar">Full Scholar</option>
                 <option value="half-scholar">Half Scholar</option>
               </select>

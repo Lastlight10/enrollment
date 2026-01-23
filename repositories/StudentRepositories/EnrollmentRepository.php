@@ -18,6 +18,7 @@ class EnrollmentRepository extends Repository{
         'period_id'    => $data['period_id'],
         'course_id'    => $data['course_id'],
         'grade_year'   => $data['grade_year'],
+        'id_number'    => $data['id_number'],
         'scholar_type' => $data['scholar_type'],
         'status'       => 'pending'
       ]);
@@ -47,7 +48,8 @@ class EnrollmentRepository extends Repository{
 
   public function findForStudent($userId, $enrollmentId)
   {
-    return Enrollment::with(['course', 'subjects', 'payments'])
+    // Changed 'users' to 'user' assuming a standard BelongsTo relationship
+    return Enrollment::with(['course', 'subjects', 'payments', 'user']) 
       ->where('user_id', $userId)
       ->where('id', $enrollmentId)
       ->first();
