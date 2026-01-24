@@ -35,17 +35,12 @@
     <div class="mb-4">
       <label class="form-label">Enter 6-Digit Code</label>
       <input type="text" name="otp_code" class="form-control form-control-lg text-center fw-bold" 
-             placeholder="000000" maxlength="6" required autofocus>
+             placeholder="000000" minlength="6" maxlength="6" required autofocus pattern="[0-9]*" 
+       oninput="this.value = this.value.replace(/[^0-9]/g, '');">
     </div>
 
     <div class="d-grid">
       <button type="submit" class="btn btn-primary btn-lg">Verify Account</button>
     </div>
   </form>
-
-  <div class="mt-4">
-    <p class="small text-muted">Didn't receive the code? <br>
-      <a href="/auth/resend-otp?email=<?= urlencode($email) ?>" class="text-decoration-none">Resend Code</a>
-    </p>
-  </div>
 </div>

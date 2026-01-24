@@ -41,11 +41,11 @@ class Connection
 
       static::$capsule->addConnection([
         'driver'    => 'mysql',
-        'host'      => 'localhost',    // Or 'localhost'
-        'port'      => '3306',         // Default MySQL port
+        'host'      => '127.0.0.1',    // Or 'localhost'
+        'port'      => '3307',         // Default MySQL port
         'database'  => 'enrollment',   // The name of the database you created
-        'username'  => 'lastlight10',         // Your MySQL username (default is root)
-        'password'  => 'rootguard0810',             // Your MySQL password (empty by default in XAMPP)
+        'username'  => 'enrollment_user',         // Your MySQL username (default is root)
+        'password'  => 'rootGuard0810',             // Your MySQL password (empty by default in XAMPP)
         'charset'   => 'utf8mb4',      // Best practice for modern apps
         'collation' => 'utf8mb4_unicode_ci',
         'prefix'    => '',
