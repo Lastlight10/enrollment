@@ -1,38 +1,43 @@
 .auth-bg {
   background: linear-gradient(135deg, #004d00 0%, #002200 100%);
-  height: 100vh;
+  min-height: 100vh; /* Changed from height to min-height for scrolling */
   display: flex;
   align-items: center; 
   justify-content: center;
+  padding: 20px 0; /* Add padding for small screens */
 }
 
 .auth-container {
   width: 100%;
-  max-width: 900px; /* Adjusted to your request */
-  padding: 20px;
+  max-width: 900px;
+  padding: 15px;
 }
 
 .auth-card {
-    background: #ffffff;
-    border: none;
-    border-radius: 1.5rem;
-    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.4);
-    overflow: hidden;
-    display: flex; /* Force children to respect height */
-    min-height: 550px; /* Adjust as needed */
+  background: #ffffff;
+  border: none;
+  border-radius: 1.5rem;
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column; /* Stack by default */
 }
 
-/* Ensure the row inside the card takes full height */
-.auth-card .row.g-0 {
-    width: 100%;
-    margin: 0;
+/* On tablets/desktops, switch to side-by-side */
+@media (min-width: 768px) {
+  .auth-card {
+    flex-direction: row;
+    min-height: 550px;
+  }
 }
 
 .left-branding {
-    background: linear-gradient(135deg, #004d00 0%, #002200 100%);
-    /* This ensures it fills the height of the row */
-    height: 100%; 
-    display: flex !important;
+  background: linear-gradient(135deg, #004d00 0%, #002200 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
 }
 
 .auth-logo img {
