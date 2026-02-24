@@ -1,0 +1,63 @@
+/* Base Mobile-First Styles */
+.auth-bg {
+  background: linear-gradient(135deg, #004d00 0%, #002200 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center; 
+  justify-content: center;
+  padding: 1rem; /* Use relative units for better scaling */
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 900px;
+  /* Removed fixed padding to let the card control internal spacing */
+}
+
+.auth-card {
+  background: #ffffff;
+  border-radius: 1.5rem;
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column; 
+}
+
+.left-branding {
+  background: linear-gradient(135deg, #004d00 0%, #002200 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem; /* Reduced for mobile */
+}
+
+.auth-logo img {
+  max-width: 100px; /* Smaller on mobile to save vertical space */
+  height: auto;
+}
+
+/* Tablet & Desktop Refinements */
+@media (min-width: 768px) {
+  .auth-card {
+    flex-direction: row;
+    min-height: 550px;
+  }
+
+  .left-branding {
+    flex: 1; /* Takes up half the space */
+    padding: 3rem;
+  }
+  
+  .auth-logo img {
+    max-width: 140px; /* Larger logo on desktop */
+  }
+
+  /* Assuming you have a .right-content or form container */
+  .right-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 3rem;
+  }
+}

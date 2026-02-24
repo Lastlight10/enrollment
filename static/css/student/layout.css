@@ -1,0 +1,11 @@
+/* In layout.php or your CSS file */
+.navbar { 
+  z-index: 1030 !important; /* Standard Bootstrap sticky z-index */
+  background-color: #004d00 !important;
+}
+
+/* Ensure the sticky sidebar stays below the navbar */
+.sticky-sidebar {
+  top: 80px !important; /* Adjust this based on your navbar height */
+  z-index: 1000; /* Lower than the navbar */
+}

@@ -1,0 +1,8 @@
+vendor/
+credentials.json
+token.json
+.env
+composer.lock
+.vscode/
+composer.phar
+storage/logs/*.log

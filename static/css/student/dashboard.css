@@ -1,0 +1,13 @@
+.bg-custom-green { background-color: #004d00 !important; }
+.text-custom-green { color: #004d00 !important; }
+.btn-custom-green { 
+  background-color: #004d00 !important; 
+  color: white !important;
+  border: none;
+  }
+.btn-custom-green:hover { background-color: #003300 !important; }
+.badge-status-pending { background-color: #ffc107; color: #000; }
+.badge-status-enrolled { background-color: #004d00; color: #fff; }
+.modal {
+  display: none;
+}

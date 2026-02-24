@@ -1,0 +1,19 @@
+# 1. Start the Rewrite Engine
+RewriteEngine On
+
+# 2. Block access to sensitive files (Security)
+<Files .env>
+  Order allow,deny
+  Deny from all
+</Files>
+
+# 3. Handle trailing slashes (Optional: redirects /login/ to /login)
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)/$ /$1 [L,R=301]
+
+# 4. Routing: If the requested file or folder doesn't exist...
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# 5. ...send the request to index.php
+RewriteRule ^ index.php [L]
