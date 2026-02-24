@@ -1,24 +1,11 @@
 {
     "name": "my-vendor/enrollment",
-    "require": {
+        "require": {
         "illuminate/database": "^11.0",
         "phpmailer/phpmailer": "^6.9",
         "vlucas/phpdotenv": "^5.6",
         "dompdf/dompdf": "^3.1",
         "google/apiclient": "^2.19"
-    },
-    "extra": {
-        "google/apiclient-services": [
-            "Gmail"
-        ]
-    },
-    "scripts": {
-        "post-update-cmd": [
-            "Google\\Task\\ComposerInformation::cleanup"
-        ],
-        "post-install-cmd": [
-            "Google\\Task\\ComposerInformation::cleanup"
-        ]
     },
     "license": "MIT",
     "autoload": {
