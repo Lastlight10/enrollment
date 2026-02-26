@@ -18,8 +18,25 @@
   <?php endif; ?>
 <?php endforeach; ?>
 
+
   <div class="row">
+    <div class="row mb-4">
+      <div class="col-md-6 col-lg-4">
+        <div class="input-group shadow-sm">
+          <span class="input-group-text bg-white border-end-0">
+            <i class="bi bi-search text-muted"></i>
+          </span>
+          <input type="text" 
+                id="curriculumSearch" 
+                class="form-control border-start-0 ps-0" 
+                placeholder="Search by course name..." 
+                maxlength="50"
+                oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
+        </div>
+      </div>
+    </div>
     <?php if(count($curriculums) > 0): ?>
+      
       <?php foreach($curriculums as $item): ?>
         <div class="col-md-6 col-lg-4 mb-4">
           <div class="card border-0 shadow-sm h-100">
@@ -104,9 +121,26 @@
 </div>
 
 <script>
+  document.getElementById('curriculumSearch').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    // Use a more specific selector to only target the curriculum cards
+    const curriculumCards = document.querySelectorAll('.row > .col-md-6.col-lg-4:not(:has(#curriculumSearch))');
+
+    curriculumCards.forEach(card => {
+        const courseCode = card.querySelector('.badge').innerText.toLowerCase();
+        const courseName = card.querySelector('h5').innerText.toLowerCase();
+        
+        if (courseCode.includes(searchTerm) || courseName.includes(searchTerm)) {
+            card.style.setProperty('display', '', 'important');
+        } else {
+            card.style.setProperty('display', 'none', 'important');
+        }
+    });
+});
   function confirmDeleteCurriculum(id, name) {
     document.getElementById('del_course_id').value = id;
     document.getElementById('del_course_name').innerText = name;
     new bootstrap.Modal(document.getElementById('deleteCurriculumModal')).show();
   }
+  
 </script>
