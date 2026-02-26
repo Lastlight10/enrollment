@@ -1,11 +1,42 @@
-/* In layout.php or your CSS file */
+/* Navbar stays on top */
 .navbar { 
-  z-index: 1030 !important; /* Standard Bootstrap sticky z-index */
+  z-index: 1030 !important;
   background-color: #004d00 !important;
 }
 
-/* Ensure the sticky sidebar stays below the navbar */
-.sticky-sidebar {
-  top: 80px !important; /* Adjust this based on your navbar height */
-  z-index: 1000; /* Lower than the navbar */
+/* Sticky Sidebar - Only sticky on desktop (md and up) */
+@media (min-width: 768px) {
+  .sticky-sidebar {
+    position: sticky;
+    top: 80px !important; 
+    z-index: 1000;
+  }
+}
+
+/* Optimization for Mobile Modals */
+@media (max-width: 767px) {
+    /* Make the receipt preview smaller on phones */
+    #receiptPreview {
+        max-height: 300px !important;
+    }
+    
+    /* Ensure action buttons at the bottom take full width on mobile */
+    .d-flex.justify-content-end.gap-2 {
+        flex-direction: column;
+    }
+    .d-flex.justify-content-end.gap-2 .btn {
+        width: 100%;
+    }
+
+    /* Stack the fee rows more cleanly on very small screens */
+    .fee-row .col-7, .fee-row .col-4 {
+        margin-bottom: 10px;
+    }
+}
+
+/* Print utility to hide UI elements when printing the PDF */
+@media print {
+    .no-print, .btn, .navbar, .modal {
+        display: none !important;
+    }
 }

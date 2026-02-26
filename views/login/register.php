@@ -32,26 +32,30 @@
     <div class="row">
       <div class="col-md-4 mb-3">
         <label class="form-label">First Name</label>
-        <input type="text" name="first_name" class="form-control" required maxlength="30">
+        <input type="text" name="first_name" class="form-control" required 
+        maxlength="30" oninput="this.value = this.value.replace(/[^A-Za-z.\s-]/g, '')">
       </div>
       <div class="col-md-4 mb-3">
         <label class="form-label">Middle Name</label>
-        <input type="text" name="mid_name" class="form-control" maxlength="20">
+        <input type="text" name="mid_name" class="form-control" maxlength="20" 
+        oninput="this.value = this.value.replace(/[^A-Za-z.\s-]/g, '')">
       </div>
       <div class="col-md-4 mb-3">
         <label class="form-label">Last Name</label>
-        <input type="text" name="last_name" class="form-control" required maxlength="30">
+        <input type="text" name="last_name" class="form-control" required maxlength="30" 
+        oninput="this.value = this.value.replace(/[^A-Za-z.\s-]/g, '')">
       </div>
     </div>
 
     <div class="row">
       <div class="col-md-6 mb-3">
         <label class="form-label">Username</label>
-        <input type="text" name="username" class="form-control" required maxlength="30">
+        <input type="text" name="username" class="form-control" required maxlength="30" oninput="this.value = this.value.replace(/\s+/g, '')">
       </div>
       <div class="col-md-6 mb-3">
         <label class="form-label">Email Address</label>
-        <input type="email" name="email" class="form-control" required maxlength="50">
+        <input type="email" name="email" class="form-control" required maxlength="50" 
+        oninput="this.value = this.value.replace(/\s+/g, '')">
       </div>
     </div>
 
@@ -63,7 +67,8 @@
       <div class="col-md-6 mb-3">
         <label class="form-label">Password</label>
         <div class="input-group">
-          <input type="password" name="password" id="regPassword" class="form-control" required>
+          <input type="password" name="password" id="regPassword" class="form-control" required 
+          oninput="this.value = this.value.replace(/\s+/g, '')" maxlength="30">
           <button class="btn btn-outline-secondary" type="button" id="toggleRegPassword">Show</button>
         </div>
       </div>

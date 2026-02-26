@@ -1,12 +1,64 @@
-/* Container & Layout */
-.breadcrumb-item + .breadcrumb-item::before {
-  content: "•";
-  color: #ccc;
+.enrollment-info-bar {
+  border: 1px solid #f0f0f0;
+  background-color: #fff;
+  padding: 1rem;
+  gap: 1.5rem;
+  /* MOBILE FIX: Allow horizontal scroll if the screen is too narrow */
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
 }
 
-.breadcrumb-item.active {
-  color: #6c757d;
-  font-size: 0.9rem;
+/* Hide scrollbar for a cleaner look while keeping functionality */
+.enrollment-info-bar::-webkit-scrollbar {
+  display: none;
+}
+.enrollment-info-bar {
+  -ms-overflow-style: none;  
+  scrollbar-width: none;  
+}
+
+.info-group {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0; /* Prevents text from squishing on mobile */
+}
+
+.info-group label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 2px;
+  letter-spacing: 0.5px;
+}
+
+.info-group span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.info-divider {
+  width: 1px;
+  background-color: #eee;
+  align-self: stretch;
+  flex-shrink: 0;
+}
+
+/* Desktop Adjustment */
+@media (min-width: 992px) {
+  .enrollment-info-bar {
+    padding: 1rem 1.5rem;
+    gap: 2rem;
+    overflow-x: hidden; /* No need to scroll on desktop */
+  }
+  .info-group label {
+    font-size: 0.65rem;
+  }
+  .info-group span {
+    font-size: 0.95rem;
+  }
 }
 
 /* Card Styling */

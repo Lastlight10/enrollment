@@ -94,26 +94,26 @@
           <div class="col-md-4">
             <label class="form-label small fw-bold">First Name</label>
             <input type="text" name="first_name" class="form-control" required maxlength="30"
-            pattern="^[A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '');">
+            pattern="^[A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z.\s-]/g, '')">
           </div>
           <div class="col-md-4">
             <label class="form-label small fw-bold">Middle Name</label>
             <input type="text" name="mid_name" class="form-control" maxlength="20"
-             pattern="^[A-Za-z]+$" oninput="this.value = this.value.replace(/[^A-Za-z]/g, '');">
+             pattern="^[A-Za-z]+$" oninput="this.value = this.value.replace(/[^A-Za-z.\s-]/g, '')">
           </div>
           <div class="col-md-4">
             <label class="form-label small fw-bold">Last Name</label>
             <input type="text" name="last_name" class="form-control" required maxlength="30"
-            pattern="^[A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '');">
+            pattern="^[A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z.\s-]/g, '')">
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Username</label>
             <input type="text" name="username" class="form-control" required maxlength="30" pattern="^[a-zA-Z0-9]+$" 
-              oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '');">
+              oninput="this.value = this.value.replace(/\s+/g, '')">
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Email</label>
-            <input type="email" name="email" class="form-control" required maxlength="50">
+            <input type="email" name="email" class="form-control" required maxlength="50" oninput="this.value = this.value.replace(/\s+/g, '')">
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Password</label>
@@ -163,26 +163,27 @@
           <div class="col-md-4">
             <label class="form-label small fw-bold">First Name</label>
             <input type="text" name="first_name" id="edit_first_name" class="form-control" required maxlength="30"
-              pattern="^[A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '');">
+              pattern="^[A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z.\s-]/g, '')">
           </div>
           <div class="col-md-4">
             <label class="form-label small fw-bold">Middle Name</label>
             <input type="text" name="mid_name" id="edit_mid_name" class="form-control" maxlength="20"
-              pattern="^[A-Za-z]+$" oninput="this.value = this.value.replace(/[^A-Za-z]/g, '');">
+              pattern="^[A-Za-z]+$" oninput="this.value = this.value.replace(/[^A-Za-z.\s-]/g, '')">
           </div>
           <div class="col-md-4">
             <label class="form-label small fw-bold">Last Name</label>
             <input type="text" name="last_name" id="edit_last_name" class="form-control" required maxlength="30"
-              pattern="^[A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '');">
+              pattern="^[A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z.\s-]/g, '')">
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Username</label>
             <input type="text" name="username" id="edit_username" class="form-control" required maxlength="30"
-              pattern="^[0-9A-Za-z\s]+$" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '');">
+              pattern="^[0-9A-Za-z\s]+$" oninput="this.value = this.value.replace(/\s+/g, '')">
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Email</label>
-            <input type="email" name="email" id="edit_email" class="form-control" required maxlength="50">
+            <input type="email" name="email" id="edit_email" class="form-control" required maxlength="50" 
+              oninput="this.value = this.value.replace(/\s+/g, '')">
           </div>
           <div class="col-md-6">
             <label class="form-label small fw-bold">Account Type</label>

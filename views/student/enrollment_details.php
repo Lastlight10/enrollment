@@ -7,16 +7,31 @@
       </a>
       
       <h2 class="mt-2 fw-bold">Enrollment Details</h2>
-      <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item active">Ref #<?= $e->id ?></li>
-          <li class="breadcrumb-item active">ID Number: <?= htmlspecialchars(string: $e->grade_year) ?></li>
-          <li class="breadcrumb-item active">Scholar Type: <?= htmlspecialchars(string: $e->scholar_type) ?></li>
-          <li class="breadcrumb-item active"><?= htmlspecialchars($e->course?->course_name) ?></li>
-          <li class="breadcrumb-item active">Academic Year: <?= htmlspecialchars(string: $e->period?->acad_year) ?></li>
-          <li class="breadcrumb-item active">Semester: <?= htmlspecialchars(string: $e->period?->semester) ?></li>
-        </ol>
-      </nav>
+      <div class="enrollment-info-bar d-flex flex-wrap gap-4 py-3 px-4 bg-white shadow-sm rounded-4 mb-4">
+        <div class="info-group">
+          <label>Reference</label>
+          <span>#<?= $e->id ?></span>
+        </div>
+        <div class="info-divider"></div>
+        <div class="info-group">
+          <label>Student ID</label>
+          <span><?= htmlspecialchars($e->id_number) ?></span>
+        </div>
+        <div class="info-group">
+          <label>Year Level</label>
+          <span><?= htmlspecialchars($e->grade_year) ?></span>
+        </div>
+        <div class="info-divider"></div>
+        <div class="info-group">
+          <label>Course</label>
+          <span><?= htmlspecialchars($e->course?->course_name) ?></span>
+        </div>
+        <div class="info-divider"></div>
+        <div class="info-group">
+          <label>Period</label>
+          <span><?= htmlspecialchars($e->period?->acad_year) ?> | <?= htmlspecialchars($e->period?->semester) ?></span>
+        </div>
+      </div>
     </div>
     <div class="text-end">
       <span class="badge rounded-pill p-2 px-4 shadow-sm 
@@ -146,13 +161,26 @@
     <input type="hidden" name="MAX_FILE_SIZE" value="5242880"> 
     
     <div class="mb-3 text-center">
-      <label for="proof_image" class="form-label d-block p-5 border-2 border-dashed rounded bg-light cursor-pointer">
-        <i class="bi bi-camera fs-1 text-muted"></i>
-        <p class="mb-0 small text-muted">Select or drag receipt image (JPG/PNG)</p>
-        <p class="text-xs text-danger mt-1" style="font-size: 0.7rem;">Max size: 5MB</p>
-        <input type="file" name="proof_image" id="proof_image" class="d-none" accept="image/jpeg,image/png" required onchange="previewFile()">
+      <label for="proof_image" class="form-label d-block p-4 border-2 border-dashed rounded bg-light cursor-pointer position-relative">
+        <div id="placeholder-content">
+          <i class="bi bi-camera fs-1 text-muted"></i>
+          <p class="mb-0 small text-muted">Select or drag receipt image (JPG/PNG)</p>
+          <p class="text-danger mt-1" style="font-size: 0.7rem;">Max size: 5MB</p>
+        </div>
+
+        <img id="img-preview" class="img-fluid rounded shadow-sm d-none" 
+            style="max-height: 250px; width: 100%; object-fit: contain;">
+        
+        <input type="file" name="proof_image" id="proof_image" class="d-none" 
+              accept="image/jpeg,image/png" required onchange="previewFile()">
       </label>
-      <img id="img-preview" class="img-fluid mt-3 rounded shadow-sm d-none" style="max-height: 250px; object-fit: contain;">
+      
+      <div id="file-info" class="mt-2 d-none">
+        <span id="file-name" class="small fw-bold text-primary"></span>
+        <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none" onclick="resetUpload()">
+          <i class="bi bi-x-circle"></i> Remove
+        </button>
+      </div>
     </div>
         </div>
         <div class="modal-footer border-0">
@@ -183,19 +211,47 @@ function openUploadModal(id, type) {
 
 function previewFile() {
   const preview = document.getElementById('img-preview');
+  const placeholder = document.getElementById('placeholder-content');
+  const fileInfo = document.getElementById('file-info');
+  const fileName = document.getElementById('file-name');
   const file = document.getElementById('proof_image').files[0];
-  const reader = new FileReader();
-
-  reader.onloadend = function () {
-    preview.src = reader.result;
-    preview.classList.remove('d-none');
-  }
+  
+  const maxSize = 5 * 1024 * 1024; // 5MB
 
   if (file) {
+    // 1. Basic Validation
+    if (file.size > maxSize) {
+      alert("File is too large! Please select an image under 5MB.");
+      resetUpload();
+      return;
+    }
+
+    // 2. Reader Logic
+    const reader = new FileReader();
+    reader.onloadend = function () {
+      preview.src = reader.result;
+      
+      // Toggle UI visibility
+      preview.classList.remove('d-none');
+      placeholder.classList.add('d-none');
+      fileInfo.classList.remove('d-none');
+      fileName.innerText = file.name;
+    }
     reader.readAsDataURL(file);
-  } else {
-    preview.src = "";
   }
+}
+
+function resetUpload() {
+  const preview = document.getElementById('img-preview');
+  const placeholder = document.getElementById('placeholder-content');
+  const fileInfo = document.getElementById('file-info');
+  const fileInput = document.getElementById('proof_image');
+
+  fileInput.value = ""; // Clear the actual input
+  preview.src = "";
+  preview.classList.add('d-none');
+  placeholder.classList.remove('d-none');
+  fileInfo.classList.add('d-none');
 }
 </script>
 

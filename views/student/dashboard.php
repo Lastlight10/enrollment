@@ -18,8 +18,8 @@
       <h2 class="fw-bold text-dark">Welcome, <?= htmlspecialchars($_SESSION['user_name'] ?? 'Student') ?>!</h2>
       <p class="text-muted small text-uppercase mb-0">Student Enrollment History</p>
     </div>
-    <div class="col-md-4 text-md-end">
-      <a href="/student/enroll" class="btn btn-custom-green btn-sm px-3 shadow-sm">
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+      <a href="/student/enroll" class="btn btn-custom-green btn-sm px-3 shadow-sm d-block d-md-inline-block">
         <i class="bi bi-plus-lg me-1"></i> New Enrollment
       </a>
     </div>
@@ -45,7 +45,7 @@
             <?php if (isset($history) && count($history) > 0): ?>
               <?php foreach ($history as $record): ?>
                 <tr>
-                  <td class="ps-4">
+                  <td class="ps-4 text-nowrap">
                     <div class="fw-bold text-dark"><?= htmlspecialchars($record->period->acad_year ?? 'N/A') ?></div>
                     <div class="small text-muted"><?= htmlspecialchars($record->period->semester ?? '') ?></div>
                   </td>
