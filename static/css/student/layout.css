@@ -4,39 +4,90 @@
   background-color: #004d00 !important;
 }
 
-/* Sticky Sidebar - Only sticky on desktop (md and up) */
+/* Sticky Sidebar - Desktop only */
 @media (min-width: 768px) {
   .sticky-sidebar {
     position: sticky;
     top: 80px !important; 
     z-index: 1000;
   }
+  .border-start-md {
+    border-left: 1px solid #dee2e6 !important;
+    padding-left: 1.5rem !important;
+  }
 }
 
-/* Optimization for Mobile Modals */
+/* Mobile Adjustments (Phones & Tablets) */
 @media (max-width: 767px) {
-    /* Make the receipt preview smaller on phones */
-    #receiptPreview {
-        max-height: 300px !important;
-    }
-    
-    /* Ensure action buttons at the bottom take full width on mobile */
-    .d-flex.justify-content-end.gap-2 {
-        flex-direction: column;
-    }
-    .d-flex.justify-content-end.gap-2 .btn {
-        width: 100%;
-    }
+  /* Prevent horizontal overflow in the info bar */
+  .enrollment-info-bar {
+    padding: 1rem !important;
+    gap: 1rem !important;
+  }
 
-    /* Stack the fee rows more cleanly on very small screens */
-    .fee-row .col-7, .fee-row .col-4 {
-        margin-bottom: 10px;
-    }
+  .info-group {
+    flex: 1 1 40%; /* Allows two groups per row on mobile */
+  }
+
+  /* Status badge alignment on mobile */
+  .text-end {
+    text-align: left !important;
+    margin-top: 10px;
+  }
+
+  /* Make receipt preview and buttons finger-friendly */
+  #img-preview {
+    max-height: 250px !important;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    margin: 0 !important;
+  }
 }
 
-/* Print utility to hide UI elements when printing the PDF */
+/* UI Polishing */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.enrollment-info-bar label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6c757d;
+  margin-bottom: 2px;
+}
+
+.enrollment-info-bar span {
+  font-weight: 700;
+  color: #212529;
+}
+
+/* Dashed border for the upload zone */
+.border-dashed {
+  border-style: dashed !important;
+  transition: all 0.3s ease;
+}
+
+.border-dashed:hover {
+  background-color: #f8f9fa !important;
+  border-color: #0d6efd !important;
+}
+
+/* Print utility */
 @media print {
-    .no-print, .btn, .navbar, .modal {
-        display: none !important;
-    }
+  .no-print, .btn, .navbar, .modal, .modal-backdrop {
+    display: none !important;
+  }
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
 }

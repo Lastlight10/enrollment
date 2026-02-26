@@ -15,7 +15,7 @@ class Course extends Model {
     // 2. The Curriculum relation (The "New Way")
     public function curriculumSubjects() {
         return $this->belongsToMany(Subject::class, 'curriculums', 'course_id', 'subject_id')
-                    ->withPivot('year_level', 'semester') // Removed is_required
+                    ->withPivot('year_level', 'semester') 
                     ->withTimestamps();
     }
 }

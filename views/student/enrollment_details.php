@@ -7,29 +7,26 @@
       </a>
       
       <h2 class="mt-2 fw-bold">Enrollment Details</h2>
-      <div class="enrollment-info-bar d-flex flex-wrap gap-4 py-3 px-4 bg-white shadow-sm rounded-4 mb-4">
-        <div class="info-group">
-          <label>Reference</label>
-          <span>#<?= $e->id ?></span>
-        </div>
-        <div class="info-divider"></div>
-        <div class="info-group">
-          <label>Student ID</label>
-          <span><?= htmlspecialchars($e->id_number) ?></span>
-        </div>
-        <div class="info-group">
-          <label>Year Level</label>
-          <span><?= htmlspecialchars($e->grade_year) ?></span>
-        </div>
-        <div class="info-divider"></div>
-        <div class="info-group">
-          <label>Course</label>
-          <span><?= htmlspecialchars($e->course?->course_name) ?></span>
-        </div>
-        <div class="info-divider"></div>
-        <div class="info-group">
-          <label>Period</label>
-          <span><?= htmlspecialchars($e->period?->acad_year) ?> | <?= htmlspecialchars($e->period?->semester) ?></span>
+      <div class="enrollment-info-bar p-3 p-md-4 bg-white shadow-sm rounded-4 mb-4">
+        <div class="row g-3">
+          <div class="col-6 col-md-auto info-group">
+            <label class="d-block text-muted small">Reference</label>
+            <span class="fw-bold">#<?= $e->id ?></span>
+          </div>
+          <div class="col-6 col-md-auto info-group border-start-md">
+            <label class="d-block text-muted small">Student ID</label>
+            <span class="fw-bold"><?= htmlspecialchars($e->id_number) ?></span>
+          </div>
+          <div class="col-6 col-md-auto info-group border-start-md">
+            <label class="d-block text-muted small">Year Level</label>
+            <span class="fw-bold"><?= htmlspecialchars($e->grade_year) ?></span>
+          </div>
+          <div class="col-12 col-md info-group border-start-md flex-grow-1">
+            <label class="d-block text-muted small">Course</label>
+            <span class="fw-bold d-inline-block text-nowrap" style="max-width: 100%;">
+              <?= htmlspecialchars($e->course?->course_name) ?>
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -59,37 +56,50 @@
       <?php endif; ?>
 
       <div class="card border-0 shadow-sm overflow-hidden">
-        <div class="card-header bg-white py-3">
-          <h5 class="mb-0 fw-bold">Selected Subjects</h5>
-        </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th class="ps-4">Code</th>
-                  <th>Subject Name</th>
-                  <th class="text-center">Units</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php $total = 0; foreach($e->subjects as $s): $total += $s->units; ?>
-                <tr>
-                  <td class="ps-4 fw-bold text-muted"><?= $s->subject_code ?></td>
-                  <td><?= $s->subject_name ?></td>
-                  <td class="text-center"><?= $s->units ?></td>
-                </tr>
-                <?php endforeach; ?>
-              </tbody>
-              <tfoot class="table-light">
-                <tr>
-                  <td colspan="2" class="text-end fw-bold">Total Enrolled Units:</td>
-                  <td class="text-center fw-bold text-primary"><?= $total ?></td>
-                </tr>
-              </tfoot>
-            </table>
+  <div class="card-header bg-white py-3">
+    <h5 class="mb-0 fw-bold">Selected Subjects</h5>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive d-none d-md-block">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">Code</th>
+            <th>Subject Name</th>
+            <th class="text-center">Units</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php $total = 0; foreach($e->subjects as $s): $total += $s->units; ?>
+          <tr>
+            <td class="ps-4 fw-bold text-muted"><?= $s->subject_code ?></td>
+            <td><?= $s->subject_name ?></td>
+            <td class="text-center"><?= $s->units ?></td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="d-md-none">
+      <?php foreach($e->subjects as $s): ?>
+      <div class="p-3 border-bottom">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="fw-bold text-primary small"><?= $s->subject_code ?></div>
+            <div class="text-dark py-1"><?= $s->subject_name ?></div>
           </div>
+          <span class="badge bg-light text-dark border"><?= $s->units ?> Units</span>
         </div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+
+    <div class="bg-light p-3 d-flex justify-content-between align-items-center">
+      <span class="fw-bold ps-md-4">Total Enrolled Units:</span>
+      <span class="fs-5 fw-bold text-primary pe-md-4"><?= $total ?></span>
+    </div>
+  </div>
       </div>
     </div>
 

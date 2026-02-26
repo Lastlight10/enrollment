@@ -2,6 +2,7 @@
 namespace App\Repositories\StaffRepositories;
 
 use App\Core\Repository;
+use App\Core\Logger;
 use Models\Curriculum;
 use Models\Course;
 
@@ -18,8 +19,20 @@ class CurriculumRepository extends Repository{
   // In CurriculumRepository.php
 
   public function getActiveCurriculums() {
-    // Returns courses that have at least one subject in the curriculums table
-    return Course::has('curriculumSubjects')->with('curriculumSubjects')->get();
+    return Course::has('curriculumSubjects')
+      ->with(['curriculumSubjects' => function ($query) {
+        $query->reorder()
+          ->orderBy('subjects.subject_code', 'asc')
+          ->orderByRaw("FIELD(year_level, '1st Year', '2nd Year', '3rd Year', '4th Year')")
+          ->orderByRaw("FIELD(semester, '1st Semester', '2nd Semester', 'Summer')")
+          ;
+
+        // Log the SQL for the related subjects query
+        Logger::log($query->toSql());
+        // Log the values (bindings) used in the FIELD() and WHERE clauses
+        Logger::log(json_encode($query->getBindings()));
+      }])
+      ->get();
   }
 
   public function getAvailableCourses() {
