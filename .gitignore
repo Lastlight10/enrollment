@@ -6,3 +6,4 @@ composer.lock
 .vscode/
 composer.phar
 storage/logs/*.log
+vendor.zip
