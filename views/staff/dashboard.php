@@ -63,7 +63,7 @@
 
 <div class="card border-0 shadow-sm">
   <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-    <h5 class="mb-0 fw-bold">Recent Registrations</h5>
+    <h5 class="mb-0 fw-bold">Recent Enrollments</h5>
     <a href="/staff/enrollments" class="btn btn-sm btn-outline-primary rounded-pill px-3">View All</a>
   </div>
   <div class="table-responsive p-0">

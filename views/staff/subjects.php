@@ -31,7 +31,23 @@
   </div>
   <?php unset($_SESSION['info']); ?>
 <?php endif; ?>
-
+<div class="row mb-3">
+  <div class="col-md-4 ms-auto">
+    <div class="input-group">
+      <span class="input-group-text bg-white border-end-0">
+        <i class="bi bi-search text-muted"></i>
+      </span>
+      <input 
+        type="text" 
+        id="subjectSearch" 
+        class="form-control border-start-0 ps-0"
+        maxlength="100" 
+        placeholder="Search subject titles..."
+        onkeyup="filterSubjects()"
+      >
+    </div>
+  </div>
+</div>
 <div class="card shadow-sm">
   <div class="card-body p-0">
     <table class="table table-hover mb-0">
@@ -44,7 +60,7 @@
           <th class="text-center">Actions</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="subjectTableBody">
         <?php if(empty($subjects)): ?>
           <tr>
             <td colspan="5" class="text-center py-4 text-muted">No subjects found.</td>
@@ -53,7 +69,7 @@
           <?php foreach($subjects as $subject): ?>
             <tr>
               <td class="ps-3 fw-bold text-primary"><?= htmlspecialchars($subject->subject_code) ?></td>
-              <td><?= htmlspecialchars($subject->subject_title) ?></td>
+              <td class="subject-title"><?= htmlspecialchars($subject->subject_title) ?></td>
               <td><?= htmlspecialchars($subject->units) ?></td>
               <td>
                 <span class="badge bg-info text-dark">
@@ -209,4 +225,24 @@
       window.location.href = '/staff/subjects/delete/' + id;
     }
   }
+  function filterSubjects() {
+  const input = document.getElementById('subjectSearch');
+  const filter = input.value.toLowerCase();
+  const tbody = document.getElementById('subjectTableBody');
+  const rows = tbody.getElementsByTagName('tr');
+
+  for (let i = 0; i < rows.length; i++) {
+    // Only search within the "Subject Title" column (index 1)
+    const titleCell = rows[i].getElementsByClassName('subject-title')[0];
+    
+    if (titleCell) {
+      const textValue = titleCell.textContent || titleCell.innerText;
+      if (textValue.toLowerCase().indexOf(filter) > -1) {
+        rows[i].style.display = "";
+      } else {
+        rows[i].style.display = "none";
+      }
+    }
+  }
+}
 </script>

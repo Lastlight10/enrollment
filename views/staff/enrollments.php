@@ -14,7 +14,23 @@
     </div>
   <?php endif; ?>
 <?php endforeach; ?>
-
+<div class="row mb-3">
+  <div class="col-md-4 ms-auto">
+    <div class="input-group shadow-sm">
+      <span class="input-group-text bg-white border-end-0">
+        <i class="bi bi-search text-muted"></i>
+      </span>
+      <input 
+        type="text" 
+        id="enrollmentSearch" 
+        class="form-control border-start-0 ps-0" 
+        maxlength="50"
+        placeholder="Search name or username..."
+        onkeyup="filterEnrollments()"
+      >
+    </div>
+  </div>
+</div>
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -28,7 +44,7 @@
             <th class="text-center">Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="enrollmentTableBody">
           <?php if(empty($enrollments)): ?>
             <tr><td colspan="5" class="text-center py-5 text-muted">No applications found.</td></tr>
           <?php else: ?>
@@ -38,7 +54,7 @@
                 $displayName = htmlspecialchars($e->user?->full_name ?? 'Unknown Student'); 
               ?>
               <tr>
-                <td class="ps-4">
+                <td class="ps-4 searchable-student">
                   <div class="fw-bold text-dark"><?= $displayName ?></div>
                   <small class="text-muted"><?= htmlspecialchars($e->user?->username ?? 'N/A') ?></small>
                 </td>

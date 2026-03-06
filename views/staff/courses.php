@@ -31,7 +31,23 @@
   </div>
   <?php unset($_SESSION['info']); ?>
 <?php endif; ?>
-
+<div class="row mb-3">
+  <div class="col-md-4 ms-auto">
+    <div class="input-group shadow-sm">
+      <span class="input-group-text bg-white border-end-0">
+        <i class="bi bi-search text-muted"></i>
+      </span>
+      <input 
+        type="text" 
+        id="courseSearch" 
+        class="form-control border-start-0 ps-0" 
+        maxlength="50"
+        placeholder="Search code or course name..."
+        onkeyup="filterCourses()"
+      >
+    </div>
+  </div>
+</div>
 <div class="card shadow-sm">
   <div class="card-body p-0">
     <table class="table table-hover mb-0">
@@ -43,7 +59,7 @@
           <th class="text-center">Actions</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="courseTableBody">
         <?php if(empty($courses)): ?>
           <tr>
             <td colspan="4" class="text-center py-4 text-muted">No courses found.</td>
@@ -52,7 +68,7 @@
           <?php foreach($courses as $course): ?>
             <tr>
               <td class="ps-3 fw-bold text-primary"><?= htmlspecialchars($course->course_code) ?></td>
-              <td><?= htmlspecialchars($course->course_name) ?></td>
+              <td class="searchable-name"><?= htmlspecialchars($course->course_name) ?></td>
               <td class="small text-muted"><?= date('M d, Y', strtotime($course->created_at)) ?></td>
               <td class="text-center">
                 <div class="btn-group btn-group-sm">
@@ -172,4 +188,31 @@
       window.location.href = '/staff/courses/delete/' + id;
     }
   }
+  function filterCourses() {
+    const input = document.getElementById('courseSearch');
+    const filter = input.value.toLowerCase();
+    const tbody = document.getElementById('courseTableBody');
+    const rows = tbody.getElementsByTagName('tr');
+
+    for (let i = 0; i < rows.length; i++) {
+        // Skip the "No courses found" row if it exists
+        if (rows[i].cells.length < 2) continue;
+
+        const codeCell = rows[i].querySelector('.searchable-code');
+        const nameCell = rows[i].querySelector('.searchable-name');
+        
+        if (codeCell && nameCell) {
+            const codeText = codeCell.textContent || codeCell.innerText;
+            const nameText = nameCell.textContent || nameCell.innerText;
+            
+            // Check if the filter matches either the code OR the name
+            if (codeText.toLowerCase().indexOf(filter) > -1 || 
+                nameText.toLowerCase().indexOf(filter) > -1) {
+                rows[i].style.display = "";
+            } else {
+                rows[i].style.display = "none";
+            }
+        }
+    }
+}
 </script>

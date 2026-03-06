@@ -55,14 +55,33 @@
                   </div>
               <?php endif; ?>
           </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Course</label>
-              <select name="course_id" class="form-select" required>
-                <?php foreach ($courses as $c): ?>
-                  <option value="<?= $c->id ?>"><?= htmlspecialchars($c->course_name ?? '') ?></option>
-                <?php endforeach; ?>
-              </select>
+           <div class="mb-3">
+            <label class="form-label fw-bold">Course</label>
+            
+            <div class="input-group input-group-sm mb-2 shadow-sm">
+              <span class="input-group-text bg-white border-end-0">
+                <i class="bi bi-search text-muted"></i>
+              </span>
+              <input 
+                type="text" 
+                id="courseSearchInput" 
+                class="form-control border-start-0 border-end-0 ps-0" 
+                maxlength="50"
+                placeholder="Type to filter courses..."
+                onkeyup="filterCourses()">
+              <button class="btn btn-outline-secondary border-start-0 bg-white text-muted" type="button" onclick="resetCourseFilter()">
+                <i class="bi bi-x"></i>
+              </button>
             </div>
+
+            <select name="course_id" id="courseSelect" class="form-select" required size="4" style="height: auto;">
+              <option value="" disabled selected id="coursePlaceholder">-- Select Course --</option>
+              <?php foreach ($courses as $c): ?>
+                <option value="<?= $c->id ?>"><?= htmlspecialchars($c->course_name ?? '') ?></option>
+              <?php endforeach; ?>
+            </select>
+            <div id="noCourseMessage" class="small text-danger mt-1 d-none">No matching courses found.</div>
+          </div>
             <div class="mb-3">
               <label class="form-label fw-bold">ID Number</label>
               <input 
@@ -182,6 +201,36 @@
 </div>
 
 <script>
+  function filterCourses() {
+  const input = document.getElementById('courseSearchInput');
+  const filter = input.value.toLowerCase();
+  const select = document.getElementById('courseSelect');
+  const options = select.getElementsByTagName('option');
+  const noResult = document.getElementById('noCourseMessage');
+  let hasMatch = false;
+
+  for (let i = 0; i < options.length; i++) {
+    if (options[i].id === 'coursePlaceholder') continue;
+
+    const txtValue = options[i].textContent || options[i].innerText;
+    if (txtValue.toLowerCase().indexOf(filter) > -1) {
+      options[i].style.display = "";
+      hasMatch = true;
+    } else {
+      options[i].style.display = "none";
+    }
+  }
+  
+  // Show/Hide "No Results" message
+  noResult.classList.toggle('d-none', hasMatch || filter === "");
+}
+
+function resetCourseFilter() {
+  const input = document.getElementById('courseSearchInput');
+  input.value = "";
+  filterCourses();
+  input.focus();
+}
   const chosenBody = document.getElementById('chosenBody');
   const emptyPlaceholder = document.getElementById('emptyPlaceholder');
   const totalUnitsEl = document.getElementById('totalUnits');
