@@ -122,7 +122,7 @@
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold">Subject Title</label>
-          <input type="text" name="subject_title" class="form-control" placeholder="e.g., Integrative Programming" required maxlength="50">
+          <input type="text" name="subject_title" class="form-control" placeholder="e.g., Integrative Programming" required maxlength="100">
         </div>
       </div>
       <div class="modal-footer">
@@ -175,7 +175,7 @@
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold">Subject Title</label>
-          <input type="text" name="subject_title" id="edit_subject_title" class="form-control" required maxlength="50">
+          <input type="text" name="subject_title" id="edit_subject_title" class="form-control" required maxlength="100">
         </div>
       </div>
       <div class="modal-footer">
