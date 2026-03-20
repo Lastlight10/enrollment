@@ -75,49 +75,64 @@
   </div>
 </div>
 <div class="modal fade" id="addSubjectModal" tabindex="-1">
-    <div class="modal-dialog">
-        <form action="/staff/curriculum/add" method="POST" class="modal-content border-0 shadow">
-            <input type="hidden" name="course_id" value="<?= $course->id ?>">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold">Add Subject to Roadmap</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+  <div class="modal-dialog">
+    <form action="/staff/curriculum/add" method="POST" class="modal-content border-0 shadow">
+      <input type="hidden" name="course_id" value="<?= $course->id ?>">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold">Add Subjects to Roadmap</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label fw-bold mb-0">Select Subjects</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="selectAllCheck" onclick="toggleAllCheckboxes(this)">
+              <label class="form-check-label small fw-bold" for="selectAllCheck">Select All</label>
             </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Select Subject</label>
-                    <select name="subject_id" class="form-select" required>
-                        <option value="" selected disabled>-- Choose Subject --</option>
-                        <?php foreach($allSubjects as $sub): ?>
-                            <option value="<?= $sub->id ?>"><?= $sub->subject_code ?> - <?= $sub->subject_title ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Year Level</label>
-                        <select name="year_level" class="form-select" required>
-                            <option value="1st Year">1st Year</option>
-                            <option value="2nd Year">2nd Year</option>
-                            <option value="3rd Year">3rd Year</option>
-                            <option value="4th Year">4th Year</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Semester</label>
-                        <select name="semester" class="form-select" required>
-                            <option value="1st Semester">1st Semester</option>
-                            <option value="2nd Semester">2nd Semester</option>
-                            <option value="Summer">Summer</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary px-4">Add Subject</button>
-            </div>
-        </form>
-    </div>
+          </div>
+          
+          <input type="text" class="form-control form-control-sm mb-2" id="modalSubjectSearch" placeholder="Filter subjects..." onkeyup="filterModalSubjects()" maxlength="50">
+
+          <div class="border rounded p-3 bg-light" style="max-height: 250px; overflow-y: auto;" id="checkboxList">
+            <?php foreach($allSubjects as $sub): ?>
+              <div class="form-check mb-2 subject-item">
+                <input class="form-check-input subject-checkbox" type="checkbox" name="subject_ids[]" value="<?= $sub->id ?>" id="sub_<?= $sub->id ?>">
+                <label class="form-check-label d-block" for="sub_<?= $sub->id ?>">
+                  <span class="fw-bold text-dark d-block mb-0"><?= $sub->subject_code ?></span>
+                  <span class="small text-muted"><?= $sub->subject_title ?></span>
+                </label>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold text-primary small">Target Year Level</label>
+            <select name="year_level" class="form-select form-select-sm" required>
+              <option value="1st Year">1st Year</option>
+              <option value="2nd Year">2nd Year</option>
+              <option value="3rd Year">3rd Year</option>
+              <option value="4th Year">4th Year</option>
+            </select>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold text-primary small">Target Semester</label>
+            <select name="semester" class="form-select form-select-sm" required>
+              <option value="1st Semester">1st Semester</option>
+              <option value="2nd Semester">2nd Semester</option>
+              <option value="Summer">Summer</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light rounded-bottom">
+        <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary px-4 shadow-sm">Add Selected Subjects</button>
+      </div>
+    </form>
+  </div>
 </div>
 <div class="modal fade" id="editModal" tabindex="-1">
   <div class="modal-dialog">
@@ -207,5 +222,26 @@
     document.getElementById('delete_code_label').innerText = code;
     let delMdl = new bootstrap.Modal(document.getElementById('deleteModal'));
     delMdl.show();
+  }
+  // 1. Toggle Select All Checkboxes
+  function toggleAllCheckboxes(master) {
+    const checkboxes = document.querySelectorAll('.subject-checkbox');
+    checkboxes.forEach(cb => {
+      // Only toggle checkboxes that are currently visible (not filtered out)
+      if (cb.closest('.subject-item').style.display !== 'none') {
+        cb.checked = master.checked;
+      }
+    });
+  }
+
+  // 2. Filter subjects inside the modal checkbox list
+  function filterModalSubjects() {
+    let filter = document.getElementById('modalSubjectSearch').value.toLowerCase();
+    let items = document.querySelectorAll('.subject-item');
+    
+    items.forEach(item => {
+      let text = item.innerText.toLowerCase();
+      item.style.display = text.includes(filter) ? '' : 'none';
+    });
   }
 </script>

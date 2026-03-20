@@ -41,31 +41,51 @@ class CurriculumController extends Controller {
 
 
   public function store() {
-  $courseId = $this->input('course_id');
-  $subjectId = $this->input('subject_id');
-  
-  $data = [
-    'course_id'  => $courseId,
-    'subject_id' => $subjectId,
-    'year_level' => $this->input('year_level'),
-    'semester'   => $this->input('semester')
-  ];
+    $courseId = $this->input('course_id');
+    $subjectIds = $this->input('subject_ids'); // Expecting an array
+    $yearLevel = $this->input('year_level');
+    $semester = $this->input('semester');
 
-  $result = $this->curriculumRepo->add($data);
+    if (empty($subjectIds) || !is_array($subjectIds)) {
+      $_SESSION['error'] = "Please select at least one subject.";
+      return $this->redirect("/staff/curriculum/manage/{$courseId}");
+    }
 
-  if (!$result) {
-    $_SESSION['error'] = "Subject is already part of the curriculum.";
-    return $this->redirect("/staff/curriculum/manage/{$courseId}");
+    $addedCount = 0;
+    $skippedCount = 0;
+
+    foreach ($subjectIds as $id) {
+      $data = [
+        'course_id'  => $courseId,
+        'subject_id' => $id,
+        'year_level' => $yearLevel,
+        'semester'   => $semester
+      ];
+
+      $result = $this->curriculumRepo->add($data);
+
+      if ($result) {
+        $addedCount++;
+      } else {
+        $skippedCount++;
+      }
+    }
+
+    if ($addedCount > 0) {
+      $_SESSION['success'] = "Successfully added {$addedCount} subject(s).";
+    }
+
+    if ($skippedCount > 0) {
+      $msg = "{$skippedCount} subject(s) were already in the curriculum.";
+      if ($addedCount === 0) {
+        $_SESSION['error'] = $msg;
+      } else {
+        $_SESSION['success'] .= " (" . $msg . ")";
+      }
+    }
+
+    $this->redirect("/staff/curriculum/manage/{$courseId}");
   }
-
-  // Fetch the subject object to get the code
-  $subject = $this->subjectRepo->findById($subjectId); 
-  
-  // Use the code in the success message
-  $_SESSION['success'] = "Subject added: " . ($subject ? $subject->subject_code : "Successfully");
-
-  $this->redirect("/staff/curriculum/manage/{$courseId}");
-}
 
   /**
    * Handle updating subject placement
