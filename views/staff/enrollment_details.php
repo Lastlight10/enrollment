@@ -117,7 +117,7 @@
                         <?php foreach($e->subjects as $subject): ?>
                             <tr>
                                 <td class="ps-4 fw-bold"><?= htmlspecialchars($subject->subject_code ?? '') ?></td>
-                                <td><?= htmlspecialchars($subject->subject_name ?? '') ?></td>
+                                <td><?= htmlspecialchars($subject->subject_title ?? '') ?></td>
                                 <td class="text-center"><?= $subject->units ?? 0 ?></td>
                             </tr>
                             <?php $totalUnits += ($subject->units ?? 0); ?>

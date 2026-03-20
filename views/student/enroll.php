@@ -230,7 +230,7 @@ function resetCourseFilter() {
   input.value = "";
   filterCourses();
   input.focus();
-}
+}   
   const chosenBody = document.getElementById('chosenBody');
   const emptyPlaceholder = document.getElementById('emptyPlaceholder');
   const totalUnitsEl = document.getElementById('totalUnits');

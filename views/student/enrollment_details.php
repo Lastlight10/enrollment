@@ -64,16 +64,16 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th class="ps-4">Code</th>
-            <th>Subject Name</th>
-            <th class="text-center">Units</th>
+            <th class="ps-4" style="width: 20%;">Code</th>
+            <th style="width: 60%;">Subject Title</th>
+            <th class="text-center" style="width: 20%;">Units</th>
           </tr>
         </thead>
         <tbody>
           <?php $total = 0; foreach($e->subjects as $s): $total += $s->units; ?>
           <tr>
             <td class="ps-4 fw-bold text-muted"><?= $s->subject_code ?></td>
-            <td><?= $s->subject_name ?></td>
+            <td><?= $s->subject_title ?></td>
             <td class="text-center"><?= $s->units ?></td>
           </tr>
           <?php endforeach; ?>
@@ -87,7 +87,7 @@
         <div class="d-flex justify-content-between align-items-start">
           <div>
             <div class="fw-bold text-primary small"><?= $s->subject_code ?></div>
-            <div class="text-dark py-1"><?= $s->subject_name ?></div>
+            <div class="text-dark py-1"><?= $s->subject_title ?></div>
           </div>
           <span class="badge bg-light text-dark border"><?= $s->units ?> Units</span>
         </div>
