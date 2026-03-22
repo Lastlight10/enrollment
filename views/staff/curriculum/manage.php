@@ -1,29 +1,32 @@
 <div class="container py-4">
-  <div class="mb-3">
-    <a href="/staff/curriculum" class="btn btn-sm btn-link ps-0 text-decoration-none">
-      <i class="bi bi-arrow-left"></i> Back to Curriculum List
-    </a>
-  </div>
-  <?php foreach (['error' => 'danger', 'success' => 'success'] as $key => $type): ?>
-  <?php if (isset($_SESSION[$key])): ?>
-    <div class="alert alert-<?= $type ?> alert-dismissible fade show border-0 shadow-sm" role="alert">
-      <i class="bi bi-<?= $key === 'error' ? 'exclamation-triangle' : 'check-circle' ?>-fill me-2"></i>
-      <?= $_SESSION[$key]; unset($_SESSION[$key]); ?>
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-  <?php endif; ?>
-<?php endforeach; ?>
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
       <h2 class="fw-bold mb-0">Manage Curriculum</h2>
-      <p class="text-muted">Course: <span class="text-primary fw-bold"><?= htmlspecialchars($course->course_name) ?></span></p>
+      <p class="text-muted mb-0">Course: <span class="text-primary fw-bold"><?= htmlspecialchars($course->course_name) ?></span></p>
     </div>
-    <div class="d-flex gap-2">
-      <div class="input-group input-group-sm" style="width: 250px;">
+    
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <select id="filterYear" class="form-select form-select-sm" style="width: 130px;">
+        <option value="">All Years</option>
+        <option value="1st Year">1st Year</option>
+        <option value="2nd Year">2nd Year</option>
+        <option value="3rd Year">3rd Year</option>
+        <option value="4th Year">4th Year</option>
+      </select>
+
+      <select id="filterSemester" class="form-select form-select-sm" style="width: 140px;">
+        <option value="">All Semesters</option>
+        <option value="1st Semester">1st Semester</option>
+        <option value="2nd Semester">2nd Semester</option>
+        <option value="Summer">Summer</option>
+      </select>
+
+      <div class="input-group input-group-sm" style="width: 200px;">
         <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
-        <input type="text" id="subjectSearch" class="form-control border-start-0" placeholder="Search subjects..." maxlength="30">
+        <input type="text" id="subjectSearch" class="form-control border-start-0" placeholder="Search..." maxlength="50">
       </div>
-      <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
+
+      <button type="button" class="btn btn-primary btn-sm shadow-sm" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
         <i class="bi bi-plus-lg"></i> Add Subject
       </button>
     </div>
@@ -44,7 +47,9 @@
         <tbody>
           <?php if(count($course->curriculumSubjects) > 0): ?>
             <?php foreach($course->curriculumSubjects as $s): ?>
-              <tr>
+              <tr class="curriculum-row" 
+                  data-year="<?= $s->pivot->year_level ?>" 
+                  data-sem="<?= $s->pivot->semester ?>">
                 <td class="ps-4"><span class="badge bg-secondary"><?= $s->pivot->year_level ?></span></td>
                 <td class="fw-medium"><?= $s->pivot->semester ?></td>
                 <td>
@@ -53,15 +58,7 @@
                 </td>
                 <td class="text-center"><?= $s->units ?></td>
                 <td class="text-end pe-4">
-                  <button class="btn btn-sm btn-outline-info me-1" 
-                    onclick="editCurriculum(<?= $s->id ?>, '<?= $s->pivot->year_level ?>', '<?= $s->pivot->semester ?>')">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger" 
-                    onclick="confirmDelete(<?= $s->id ?>, '<?= $s->subject_code ?>')">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </td>
+                   </td>
               </tr>
             <?php endforeach; ?>
           <?php else: ?>
@@ -192,20 +189,50 @@
 
 <script>
   // Search Functionality
-  document.getElementById('subjectSearch').addEventListener('keyup', function() {
-    let filter = this.value.toLowerCase();
-    let rows = document.querySelectorAll('#curriculumTable tbody tr:not(#noResults)');
-    
-    rows.forEach(row => {
-      let code = row.querySelector('.subject-code').textContent.toLowerCase();
-      let title = row.querySelector('.subject-title').textContent.toLowerCase();
-      if (code.includes(filter) || title.includes(filter)) {
-        row.style.display = '';
-      } else {
-        row.style.display = 'none';
-      }
-    });
-  });
+  document.addEventListener('DOMContentLoaded', function() {
+    const subjectSearch = document.getElementById('subjectSearch');
+    const filterYear = document.getElementById('filterYear');
+    const filterSemester = document.getElementById('filterSemester');
+    const rows = document.querySelectorAll('.curriculum-row');
+    const noResultsRow = document.getElementById('noResults');
+
+    function performFilter() {
+        const searchText = subjectSearch.value.toLowerCase();
+        const yearVal = filterYear.value;
+        const semVal = filterSemester.value;
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            // Get data from table cells and attributes
+            const code = row.querySelector('.subject-code').textContent.toLowerCase();
+            const title = row.querySelector('.subject-title').textContent.toLowerCase();
+            const rowYear = row.getAttribute('data-year');
+            const rowSem = row.getAttribute('data-sem');
+
+            // Check if row matches all three filters
+            const matchesSearch = code.includes(searchText) || title.includes(searchText);
+            const matchesYear = yearVal === "" || rowYear === yearVal;
+            const matchesSem = semVal === "" || rowSem === semVal;
+
+            if (matchesSearch && matchesYear && matchesSem) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Show/Hide "No subjects assigned" row if all filtered out
+        if (noResultsRow) {
+            noResultsRow.style.display = (visibleCount === 0) ? '' : 'none';
+        }
+    }
+
+    // Listen for changes on all filter inputs
+    subjectSearch.addEventListener('keyup', performFilter);
+    filterYear.addEventListener('change', performFilter);
+    filterSemester.addEventListener('change', performFilter);
+});
 
   // Edit Function
   function editCurriculum(subId, year, sem) {

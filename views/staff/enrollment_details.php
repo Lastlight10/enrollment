@@ -70,16 +70,28 @@
                                     <td class="ps-3 small fw-bold"><?= ucfirst($p->payment_type) ?></td>
                                     <td class="small">₱<?= number_format($p->amount, 2) ?></td>
                                     <td class="text-end pe-3">
-                                        <?php if($p->proof_path && $p->status === 'unpaid'): ?>
-                                            <button class="btn btn-sm btn-info text-white rounded-pill px-3" 
-                                                    onclick="openPaymentReview(<?= $p->id ?>, '<?= $p->payment_type ?>', '<?= $p->proof_path ?>', '<?= htmlspecialchars(addslashes($p->remarks ?? '')) ?>')">
-                                                Review Receipt
-                                            </button>
-                                        <?php else: ?>
-                                            <span class="badge rounded-pill <?= $p->status === 'paid' ? 'bg-success' : 'bg-warning text-dark' ?>" style="font-size: 0.7rem;">
-                                                <?= strtoupper($p->status) ?>
-                                            </span>
-                                        <?php endif; ?>
+                                        <div class="d-flex justify-content-end align-items-center gap-2">
+                                            <?php if($p->proof_path): ?>
+                                                <?php if($p->status === 'unpaid'): ?>
+                                                    <button class="btn btn-sm btn-info text-white rounded-pill px-3" 
+                                                            onclick="openPaymentReview(<?= $p->id ?>, '<?= $p->payment_type ?>', '<?= $p->proof_path ?>', '<?= htmlspecialchars(addslashes($p->remarks ?? '')) ?>')">
+                                                        Review Receipt
+                                                    </button>
+                                                <?php else: ?>
+                                                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-2" title="View Receipt"
+                                                            onclick="openPaymentReview(<?= $p->id ?>, '<?= $p->payment_type ?>', '<?= $p->proof_path ?>', '<?= htmlspecialchars(addslashes($p->remarks ?? '')) ?>')">
+                                                        <i class="bi bi-eye"> Review</i>
+                                                    </button>
+                                                    <span class="badge rounded-pill bg-success" style="font-size: 0.7rem;">
+                                                        <?= strtoupper($p->status) ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <span class="badge rounded-pill bg-warning text-dark" style="font-size: 0.7rem;">
+                                                    <?= strtoupper($p->status) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -302,27 +314,38 @@
         rejectModalInstance.show();
     }
 
-    function openPaymentReview(id, type, path, currentRemarks) {
-        const form = document.getElementById('paymentReviewForm');
-        if (!form) return;
+    function openPaymentReview(id, type, path, currentRemarks, status) {
+    const form = document.getElementById('paymentReviewForm');
+    if (!form) return;
 
-        form.action = '/staff/enrollments/payments/verify/' + id;
-        document.getElementById('reviewType').innerText = type.charAt(0).toUpperCase() + type.slice(1);
-        
-        const imagePath = '/static/images/uploads/payments/' + path;
-        document.getElementById('receiptPreview').src = imagePath;
-        document.getElementById('receiptLink').href = imagePath;
-        
-        const remarksField = document.getElementById('reviewRemarks');
-        if (remarksField) {
-            remarksField.value = (currentRemarks && currentRemarks !== 'null') ? currentRemarks : '';
-        }
-
-        if (!paymentReviewModalInstance) {
-            paymentReviewModalInstance = new bootstrap.Modal(document.getElementById('paymentReviewModal'));
-        }
-        paymentReviewModalInstance.show();
+    form.action = '/staff/enrollments/payments/verify/' + id;
+    document.getElementById('reviewType').innerText = type.charAt(0).toUpperCase() + type.slice(1);
+    
+    const imagePath = '/static/images/uploads/payments/' + path;
+    document.getElementById('receiptPreview').src = imagePath;
+    document.getElementById('receiptLink').href = imagePath;
+    
+    const remarksField = document.getElementById('reviewRemarks');
+    if (remarksField) {
+        remarksField.value = (currentRemarks && currentRemarks !== 'null') ? currentRemarks : '';
     }
+
+    // NEW: If status is 'paid', you might want to disable inputs or change the button
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const statusSelect = form.querySelector('select[name="status"]');
+    
+    // Note: You'll need to pass 'status' into this function from the PHP loop above if you want this logic
+    if (status === 'paid') {
+        submitBtn.innerText = "Update Verification"; // Allow editing if needed
+    } else {
+        submitBtn.innerText = "Save Verification";
+    }
+
+    if (!paymentReviewModalInstance) {
+        paymentReviewModalInstance = new bootstrap.Modal(document.getElementById('paymentReviewModal'));
+    }
+    paymentReviewModalInstance.show();
+}
 
     function addRow() {
         const container = document.getElementById('fee-container');
