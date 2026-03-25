@@ -4,6 +4,7 @@ namespace App\Repositories\StudentRepositories;
 use App\Core\Repository;
 use Models\Enrollment;
 use Models\Payment;
+use Models\Curriculum;
 use Models\AcademicPeriod;
 // Use the Capsule Manager instead of the Facade
 use Illuminate\Database\Capsule\Manager as Capsule;
@@ -30,6 +31,23 @@ class EnrollmentRepository extends Repository{
 
       return $enrollment;
     });
+  }
+  public function getCurriculumSubjects($courseId, $yearLevel, $semester)
+  {
+    return Curriculum::where('course_id', $courseId)
+      ->where('year_level', $yearLevel)
+      ->where('semester', $semester)
+      ->with('subject') // This loads the subject details automatically
+      ->get()
+      ->map(function($item) {
+        return [
+          'id'            => $item->subject->id,
+          'subject_code'  => $item->subject->subject_code,
+          'subject_title' => $item->subject->subject_title,
+          'units'         => $item->subject->units
+        ];
+      })
+      ->toArray();
   }
   public function getByStudent($userId)
   {

@@ -112,6 +112,8 @@ $router->group('/student', function($router) {
   // Online Enrollment Logic
   $router->get('/enroll', 'Controllers\StudentEnrollmentController@showForm');
   $router->post('/enroll/submit', 'Controllers\StudentEnrollmentController@submit');
+  $router->get('/enroll/suggested-subjects', 'Controllers\StudentEnrollmentController@getSuggestedSubjects');  
+  $router->get('/enroll', 'Controllers\StudentEnrollmentController@showForm');
   
   $router->get('/enrollments', 'Controllers\StudentEnrollmentController@index');
   $router->get('/enrollment/details/{id}', 'Controllers\StudentEnrollmentController@viewDetails');
