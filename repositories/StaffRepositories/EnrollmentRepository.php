@@ -3,6 +3,8 @@ namespace App\Repositories\StaffRepositories;
 
 use App\Core\Repository;
 use Models\Enrollment;
+use Models\Curriculum;
+
 use Illuminate\Support\Facades\DB;
 
 class EnrollmentRepository extends Repository{
@@ -15,6 +17,7 @@ class EnrollmentRepository extends Repository{
             ->orderBy('created_at', 'desc')
             ->get();
   }
+  
 
   public function updateStatus($id, $status, $comments = null) {
     $data = ['status' => $status];

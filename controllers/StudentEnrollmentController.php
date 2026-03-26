@@ -36,77 +36,130 @@ class StudentEnrollmentController extends Controller
       'enrollments' => $enrollments
     ]);
   }
- public function showForm()
-  {
-    $periodRepo = new AcademicPeriodRepository();
-    $subjectRepo = new SubjectRepository();
-    $courseRepo = new CourseRepository();
+  public function showForm()
+    {
+      $periodRepo = new AcademicPeriodRepository();
+      $subjectRepo = new SubjectRepository();
+      $courseRepo = new CourseRepository();
 
-    $periods = $periodRepo->getActivePeriods(); 
-    
-    return $this->studentView('student/enroll', [
-      'title'    => 'Online Enrollment',
-      'periods'  => $periods,
-      'subjects' => $subjectRepo->all(),
-      'courses'  => $courseRepo->all()
+      $periods = $periodRepo->getActivePeriods(); 
+      
+      return $this->studentView('student/enroll', [
+        'title'    => 'Online Enrollment',
+        'periods'  => $periods,
+        'subjects' => $subjectRepo->all(),
+        'courses'  => $courseRepo->all()
+      ]);
+    }
+
+
+  public function submit(Request $request)
+  {
+    try {
+      $userId = $_SESSION['user_id'];
+      $data = $request->all();
+      
+      // Ensure we are getting the subjects array from our hidden inputs
+      $subjectIds = $data['subjects'] ?? [];
+
+      // Basic Validation
+      if (empty($data['period_id'])) {
+        throw new Exception("Please select an academic period.");
+      }
+      
+      if (empty($data['course_id'])) {
+        throw new Exception("Please select your course.");
+      }
+
+      if (empty($subjectIds)) {
+        throw new Exception("Please select at least one subject to proceed.");
+      }
+
+      // Pass the sanitized data to the repository
+      // The repository should handle the DB transaction for both 'enrollments' and 'enrolled_subjects'
+      $this->enrollRepo->enroll($userId, $data, $subjectIds);
+
+      $_SESSION['success'] = "Enrollment submitted successfully! Please settle your payment to finalize admission.";
+      return $this->redirect('/student/dashboard');
+
+    } catch (Exception $e) {
+      if ($e->getCode() == 23000 || str_contains($e->getMessage(), '1062')) {
+          $_SESSION['error'] = "You have already submitted an application for this academic period.";
+      } else {
+          $_SESSION['error'] = "An unexpected error occurred. Please try again.";
+      }
+      
+      return $this->redirect('/student/enroll');
+    }
+  }
+  public function viewDetails(Request $request, $id)
+  {
+    // Now $id will correctly be the number '1' from the URL
+    $enrollment = $this->enrollRepo->findForStudent($_SESSION['user_id'], $id);
+
+    if (!$enrollment) {
+      $_SESSION['error'] = "Record not found or access denied.";
+      return $this->redirect('/student/dashboard');
+    }
+
+    return $this->studentView('student/enrollment_details', [
+      'title' => 'Enrollment Details',
+      'e' => $enrollment
     ]);
   }
-
-
-public function submit(Request $request)
+  // In App\Repositories\StudentRepositories\EnrollmentRepository.php
+ public function getSuggestedSubjects(Request $request) 
 {
-  try {
-    $userId = $_SESSION['user_id'];
-    $data = $request->all();
-    
-    // Ensure we are getting the subjects array from our hidden inputs
-    $subjectIds = $data['subjects'] ?? [];
+    try {
+        $courseId  = $request->input('course_id');
+        $yearLevel = $request->input('year_level');
+        $periodId  = $request->input('period_id');
 
-    // Basic Validation
-    if (empty($data['period_id'])) {
-      throw new Exception("Please select an academic period.");
+        // 1. Validate Input
+        if (!$courseId || !$yearLevel || !$periodId) {
+            throw new Exception("Missing required enrollment details.");
+        }
+
+        // 2. Ensure Repository is initialized (if not already in __construct)
+        if (!$this->enrollRepo) {
+            $this->enrollRepo = new \App\Repositories\StudentRepositories\EnrollmentRepository();
+        }
+
+        // 3. Find the Period
+        $periodRepo = new AcademicPeriodRepository();
+        $period = $periodRepo->find($periodId);
+
+        if (!$period) {
+            throw new Exception("Academic period (ID: $periodId) not found in database.");
+        }
+
+        // 4. Fetch the subjects
+        // IMPORTANT: Ensure $period->semester matches the values in your curriculum table
+        $subjects = $this->enrollRepo->getCurriculumSubjects(
+            $courseId, 
+            $yearLevel, 
+            $period->semester
+        );
+
+        // 5. Success Response
+        header('Content-Type: application/json');
+        echo json_encode($subjects ?: []); // Return empty array instead of null
+        exit;
+
+    } catch (Exception $e) {
+        // This is what is sending the 400 error you see in the console
+        http_response_code(400);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'error' => $e->getMessage(),
+            'debug_info' => [
+                'period_id' => $periodId ?? 'none'
+            ]
+        ]);
+        exit;
     }
-    
-    if (empty($data['course_id'])) {
-      throw new Exception("Please select your course.");
-    }
-
-    if (empty($subjectIds)) {
-      throw new Exception("Please select at least one subject to proceed.");
-    }
-
-    // Pass the sanitized data to the repository
-    // The repository should handle the DB transaction for both 'enrollments' and 'enrolled_subjects'
-    $this->enrollRepo->enroll($userId, $data, $subjectIds);
-
-    $_SESSION['success'] = "Enrollment submitted successfully! Please settle your payment to finalize admission.";
-    return $this->redirect('/student/dashboard');
-
-  } catch (Exception $e) {
-    if ($e->getCode() == 23000 || str_contains($e->getMessage(), '1062')) {
-        $_SESSION['error'] = "You have already submitted an application for this academic period.";
-    } else {
-        $_SESSION['error'] = "An unexpected error occurred. Please try again.";
-    }
-    
-    return $this->redirect('/student/enroll');
-  }
 }
-public function viewDetails(Request $request, $id)
-{
-  // Now $id will correctly be the number '1' from the URL
-  $enrollment = $this->enrollRepo->findForStudent($_SESSION['user_id'], $id);
 
-  if (!$enrollment) {
-    $_SESSION['error'] = "Record not found or access denied.";
-    return $this->redirect('/student/dashboard');
-  }
-
-  return $this->studentView('student/enrollment_details', [
-    'title' => 'Enrollment Details',
-    'e' => $enrollment
-  ]);
-}
   public function uploadProof(Request $request, $paymentId)
   {
     try {

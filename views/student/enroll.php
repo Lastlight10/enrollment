@@ -34,7 +34,14 @@
           <div class="card-header bg-primary text-white py-3" >
             <h5 class="mb-0 fw-bold">Enrollment Details</h5>
           </div>
+         
           <div class="card-body">
+            <div id="scholarAutoSuggestContainer" class="mb-3 d-none">
+              <button type="button" id="btnAutoLoad" class="btn btn-outline-success btn-sm w-100 border-dashed">
+                <i class="bi bi-magic"></i> Load Recommended Subjects
+              </button>
+              <div class="form-text text-center text-success">Recommended for your Year Level</div>
+            </div>
             <div class="mb-3">
               <label class="form-label fw-bold">Academic Period</label>
               <select name="period_id" class="form-select <?= empty($periods) ? 'is-invalid' : '' ?>" required>
@@ -194,125 +201,235 @@
             </table>
           </div>
         </div>
+        
       </div>
 
     </div>
   </form>
 </div>
-
 <script>
-  function filterCourses() {
-  const input = document.getElementById('courseSearchInput');
-  const filter = input.value.toLowerCase();
-  const select = document.getElementById('courseSelect');
-  const options = select.getElementsByTagName('option');
-  const noResult = document.getElementById('noCourseMessage');
-  let hasMatch = false;
+  function sortChosenSubjects() {
+    const rows = Array.from(chosenBody.querySelectorAll('tr:not(#emptyPlaceholder)'));
+    
+    rows.sort((a, b) => {
+        const codeA = a.querySelector('td:first-child').textContent.trim().toLowerCase();
+        const codeB = b.querySelector('td:first-child').textContent.trim().toLowerCase();
+        return codeA.localeCompare(codeB);
+    });
 
-  for (let i = 0; i < options.length; i++) {
-    if (options[i].id === 'coursePlaceholder') continue;
-
-    const txtValue = options[i].textContent || options[i].innerText;
-    if (txtValue.toLowerCase().indexOf(filter) > -1) {
-      options[i].style.display = "";
-      hasMatch = true;
-    } else {
-      options[i].style.display = "none";
-    }
-  }
-  
-  // Show/Hide "No Results" message
-  noResult.classList.toggle('d-none', hasMatch || filter === "");
+    // Re-append sorted rows to the body
+    rows.forEach(row => chosenBody.appendChild(row));
 }
+  function filterCourses() {
+    const input = document.getElementById('courseSearchInput');
+    const filter = input.value.toLowerCase();
+    const options = courseSelect.getElementsByTagName('option');
+    const noResult = document.getElementById('noCourseMessage');
+    let hasMatch = false;
 
-function resetCourseFilter() {
-  const input = document.getElementById('courseSearchInput');
-  input.value = "";
-  filterCourses();
-  input.focus();
-}   
-  const chosenBody = document.getElementById('chosenBody');
-  const emptyPlaceholder = document.getElementById('emptyPlaceholder');
-  const totalUnitsEl = document.getElementById('totalUnits');
-  const subjectCountEl = document.getElementById('subjectCount');
-  let selectedUnits = 0;
-  let selectedCount = 0;
-
-  // Add Subject Logic
-  document.querySelectorAll('.add-subject').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const id = this.dataset.id;
-      const code = this.dataset.code;
-      const desc = this.dataset.desc;
-      const units = parseInt(this.dataset.units);
-
-      // Prevent duplicates
-      if (document.getElementById(`chosen-${id}`)) return;
-
-      // Hide placeholder
-      emptyPlaceholder.style.display = 'none';
-
-      // Update counters
-      selectedUnits += units;
-      selectedCount++;
-      updateUI();
-
-      // Create row in chosen table
-      const tr = document.createElement('tr');
-      tr.id = `chosen-${id}`;
-      tr.innerHTML = `
-        <td class="ps-4">
-          <span class="fw-bold">${code}</span>
-          <input type="hidden" name="subjects[]" value="${id}">
-        </td>
-        <td class="small">${desc}</td>
-        <td class="text-center">${units}</td>
-        <td class="text-end pe-4">
-          <button type="button" class="btn btn-sm btn-outline-danger remove-subject" data-id="${id}" data-units="${units}">
-            <i class="bi bi-trash"></i>
-          </button>
-        </td>
-      `;
-      chosenBody.appendChild(tr);
-
-      // Disable button in available table
-      this.classList.add('disabled');
-      this.innerText = 'Added';
-    });
-  });
-
-  // Remove Subject Logic
-  chosenBody.addEventListener('click', function(e) {
-    if (e.target.closest('.remove-subject')) {
-      const btn = e.target.closest('.remove-subject');
-      const id = btn.dataset.id;
-      const units = parseInt(btn.dataset.units);
-
-      document.getElementById(`chosen-${id}`).remove();
-      
-      const addBtn = document.querySelector(`.add-subject[data-id="${id}"]`);
-      addBtn.classList.remove('disabled');
-      addBtn.innerHTML = '<i class="bi bi-plus-lg"></i> Add';
-
-      selectedUnits -= units;
-      selectedCount--;
-      updateUI();
-
-      if (selectedCount === 0) emptyPlaceholder.style.display = 'table-row';
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].id === 'coursePlaceholder') continue;
+      const txtValue = options[i].textContent || options[i].innerText;
+      if (txtValue.toLowerCase().indexOf(filter) > -1) {
+          options[i].style.display = "";
+          hasMatch = true;
+      } else {
+          options[i].style.display = "none";
+      }
     }
-  });
-
-  // Search Filter
-  document.getElementById('subjectSearch').addEventListener('keyup', function() {
-    const value = this.value.toLowerCase();
-    document.querySelectorAll('#availableTable tbody tr').forEach(row => {
-      if (row.id === 'emptyPlaceholder') return;
-      row.style.display = row.innerText.toLowerCase().includes(value) ? '' : 'none';
-    });
-  });
-
-  function updateUI() {
-    totalUnitsEl.innerText = selectedUnits;
-    subjectCountEl.innerText = selectedCount;
+    noResult.classList.toggle('d-none', hasMatch || filter === "");
   }
+
+  function resetCourseFilter() {
+      const input = document.getElementById('courseSearchInput');
+      input.value = "";
+      filterCourses();
+      input.focus();
+    }
+    // 1. --- UI Element Definitions (ALL at the top) ---
+    const courseSelect = document.getElementById('courseSelect');
+    const yearSelect = document.querySelector('select[name="grade_year"]');
+    const periodSelect = document.querySelector('select[name="period_id"]');
+    const scholarSelect = document.querySelector('select[name="scholar_type"]'); // Moved up
+    
+    const autoLoadBtn = document.getElementById('btnAutoLoad');
+    const autoLoadContainer = document.getElementById('scholarAutoSuggestContainer');
+    
+    const chosenBody = document.getElementById('chosenBody');
+    const emptyPlaceholder = document.getElementById('emptyPlaceholder');
+    const totalUnitsEl = document.getElementById('totalUnits');
+    const subjectCountEl = document.getElementById('subjectCount');
+    const chosenCard = chosenBody.closest('.card');
+
+    let selectedUnits = 0;
+    let selectedCount = 0;
+
+    // 2. --- Core Logic: Fetch Suggested Subjects ---
+    async function fetchSuggestedSubjects() {
+        const courseId = courseSelect.value;
+        const yearLevel = yearSelect.value;
+        const periodId = periodSelect.value;
+        const scholarType = scholarSelect.value;
+
+        // CRITICAL: Only auto-fetch if it's a scholar type
+        if (scholarType !== 'scholar' && scholarType !== 'half-scholar') {
+            return; 
+        }
+
+        // Don't fetch if basic info is missing
+        if (!courseId || !yearLevel || !periodId) return;
+
+        try {
+            chosenCard.classList.add('card-loading');
+            
+            const url = `/student/enroll/suggested-subjects?course_id=${courseId}&year_level=${encodeURIComponent(yearLevel)}&period_id=${periodId}`;
+            const response = await fetch(url);
+            
+            if (!response.ok) throw new Error('Network response was not ok');
+            const subjects = await response.json();
+
+            // Clear existing before adding new suggested ones
+            clearChosenSubjects();
+
+            if (subjects.length > 0) {
+                subjects.forEach(s => {
+                    addSubjectToChosen(s.id, s.subject_code, s.subject_title, s.units);
+                });
+                sortChosenSubjects();
+            }
+        } catch (error) {
+            console.error("Fetch error:", error);
+        } finally {
+            chosenCard.classList.remove('card-loading');
+        }
+    }
+
+    // 3. --- Helper Functions ---
+    function addSubjectToChosen(id, code, desc, units) {
+        if (document.getElementById(`chosen-${id}`)) return;
+
+        emptyPlaceholder.style.display = 'none';
+        selectedUnits += parseInt(units);
+        selectedCount++;
+
+        const tr = document.createElement('tr');
+        tr.id = `chosen-${id}`;
+        tr.innerHTML = `
+            <td class="ps-4"><span class="fw-bold">${code}</span><input type="hidden" name="subjects[]" value="${id}"></td>
+            <td class="small">${desc}</td>
+            <td class="text-center">${units}</td>
+            <td class="text-end pe-4">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-subject" data-id="${id}" data-units="${units}">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        chosenBody.appendChild(tr);
+
+        const addBtn = document.querySelector(`.add-subject[data-id="${id}"]`);
+        if (addBtn) {
+            addBtn.classList.add('disabled');
+            addBtn.innerText = 'Added';
+        }
+        sortChosenSubjects();
+        updateUI();
+    }
+
+    function clearChosenSubjects() {
+        const rows = chosenBody.querySelectorAll('tr:not(#emptyPlaceholder)');
+        rows.forEach(row => row.remove());
+        selectedUnits = 0;
+        selectedCount = 0;
+        document.querySelectorAll('.add-subject').forEach(btn => {
+            btn.classList.remove('disabled');
+            btn.innerHTML = '<i class="bi bi-plus-lg"></i> Add';
+        });
+        emptyPlaceholder.style.display = 'table-row';
+        updateUI();
+    }
+
+    function updateUI() {
+        totalUnitsEl.innerText = selectedUnits;
+        subjectCountEl.innerText = selectedCount;
+    }
+
+    // 4. --- Event Listeners ---
+    scholarSelect.addEventListener('change', function() {
+      if (this.value === 'scholar' || this.value === 'half-scholar') {
+        autoLoadContainer.classList.remove('d-none');
+      } else {
+        autoLoadContainer.classList.add('d-none');
+        // Clear subjects if they are no longer a scholar
+        clearChosenSubjects(); 
+      }
+    });
+    // Update search input when a course is selected from the list
+    courseSelect.addEventListener('change', function() {
+      const selectedOption = this.options[this.selectedIndex];
+      if (selectedOption && selectedOption.id !== 'coursePlaceholder') {
+        const courseName = selectedOption.text;
+        document.getElementById('courseSearchInput').value = courseName;
+        
+        // Optional: Re-run filter so only the selected one shows, 
+        // or just leave it as is so the user sees their choice clearly.
+        filterCourses(); 
+      }
+    });
+    // Trigger auto-load when ANY relevant dropdown changes
+    [courseSelect, yearSelect, periodSelect, scholarSelect].forEach(el => {
+        el.addEventListener('change', () => {
+            // Toggle the "Magic Button" visibility
+            if (scholarSelect.value === 'scholar' || scholarSelect.value === 'half-scholar') {
+                autoLoadContainer.classList.remove('d-none');
+            } else {
+                autoLoadContainer.classList.add('d-none');
+            }
+            // Run the auto-fetch
+            fetchSuggestedSubjects();
+        });
+    });
+
+    // Manual "Magic Button" click
+    autoLoadBtn.addEventListener('click', async function() {
+        if (!courseSelect.value || !yearSelect.value || !periodSelect.value) {
+            alert("Please select Academic Period, Course, and Year Level first!");
+            return;
+        }
+        await fetchSuggestedSubjects();
+    });
+
+    // Manual Add buttons (from Available table)
+    document.querySelectorAll('.add-subject').forEach(btn => {
+        btn.addEventListener('click', function() {
+            addSubjectToChosen(this.dataset.id, this.dataset.code, this.dataset.desc, this.dataset.units);
+        });
+    });
+
+    // Remove buttons (from Chosen table)
+    chosenBody.addEventListener('click', function(e) {
+        const btn = e.target.closest('.remove-subject');
+        if (btn) {
+            const id = btn.dataset.id;
+            const units = parseInt(btn.dataset.units);
+            document.getElementById(`chosen-${id}`).remove();
+            const addBtn = document.querySelector(`.add-subject[data-id="${id}"]`);
+            if (addBtn) {
+                addBtn.classList.remove('disabled');
+                addBtn.innerHTML = '<i class="bi bi-plus-lg"></i> Add';
+            }
+            selectedUnits -= units;
+            selectedCount--;
+            if (selectedCount === 0) emptyPlaceholder.style.display = 'table-row';
+            updateUI();
+        }
+    });
+
+    // Subject Search (Filtering Available Table)
+    document.getElementById('subjectSearch').addEventListener('keyup', function() {
+        const value = this.value.toLowerCase();
+        document.querySelectorAll('#availableTable tbody tr').forEach(row => {
+            if (row.id === 'emptyPlaceholder') return;
+            row.style.display = row.innerText.toLowerCase().includes(value) ? '' : 'none';
+        });
+    });
 </script>
