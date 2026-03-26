@@ -1,3 +1,27 @@
+<style>
+  .card-loading {
+    position: relative;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  .card-loading::after {
+    content: "Loading Subjects...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255,255,255,0.8);
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    color: #0d6efd;
+    z-index: 10;
+  }
+  .btn.opacity-50 {
+    cursor: not-allowed !important;
+  }
+</style>
+
 <?php if (isset($_SESSION['error'])): ?>
   <div class="alert alert-danger alert-dismissible fade show" role="alert">
     <i class="bi bi-exclamation-triangle-fill me-2"></i>
@@ -95,13 +119,15 @@
                 type="text" 
                 name="id_number" 
                 id="id_number" 
-                class="form-control" 
+                class="form-control bg-light" 
+                value="<?= $_SESSION['id_number'] ?? '' ?>" 
+                readonly
                 required 
                 minlength="7"
                 maxlength="7" 
                 pattern="\d{7}" 
-                title="ID Number must be exactly 7 digits (e.g., 2500123)"
-                oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                title="Your official 7-digit Student ID">
+                <div class="form-text">This is your permanent assigned ID number.</div>
             </div>
             <div class="mb-3">
                 <label class="form-label fw-bold">Year Level</label>
@@ -134,7 +160,7 @@
               </div>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">Submit Application</button>
+            <button type="button" onclick="prepareConfirmation()" class="btn btn-primary w-100 py-2 fw-bold">Submit Application</button>
             <a href="/student/dashboard" class="btn btn-link w-100 mt-2 text-muted">Cancel</a>
           </div>
         </div>
@@ -207,50 +233,41 @@
     </div>
   </form>
 </div>
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold">Confirm Enrollment</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body py-4 text-center">
+        <p class="mb-1 text-muted">You are about to submit your application for:</p>
+        <h4 class="fw-bold text-primary" id="modalPeriodText">-</h4>
+        <hr class="my-4">
+        <div class="row">
+          <div class="col-6 border-end">
+            <small class="text-uppercase text-muted d-block">Subjects</small>
+            <span class="fs-4 fw-bold" id="modalSubjectCount">0</span>
+          </div>
+          <div class="col-6">
+            <small class="text-uppercase text-muted d-block">Total Units</small>
+            <span class="fs-4 fw-bold text-success" id="modalTotalUnits">0</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-link text-muted decoration-none" data-bs-dismiss="modal">Go Back</button>
+        <button type="button" id="confirmSubmitBtn" class="btn btn-primary px-4 fw-bold">Submit Now</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
-  function sortChosenSubjects() {
-    const rows = Array.from(chosenBody.querySelectorAll('tr:not(#emptyPlaceholder)'));
-    
-    rows.sort((a, b) => {
-        const codeA = a.querySelector('td:first-child').textContent.trim().toLowerCase();
-        const codeB = b.querySelector('td:first-child').textContent.trim().toLowerCase();
-        return codeA.localeCompare(codeB);
-    });
-
-    // Re-append sorted rows to the body
-    rows.forEach(row => chosenBody.appendChild(row));
-}
-  function filterCourses() {
-    const input = document.getElementById('courseSearchInput');
-    const filter = input.value.toLowerCase();
-    const options = courseSelect.getElementsByTagName('option');
-    const noResult = document.getElementById('noCourseMessage');
-    let hasMatch = false;
-
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].id === 'coursePlaceholder') continue;
-      const txtValue = options[i].textContent || options[i].innerText;
-      if (txtValue.toLowerCase().indexOf(filter) > -1) {
-          options[i].style.display = "";
-          hasMatch = true;
-      } else {
-          options[i].style.display = "none";
-      }
-    }
-    noResult.classList.toggle('d-none', hasMatch || filter === "");
-  }
-
-  function resetCourseFilter() {
-      const input = document.getElementById('courseSearchInput');
-      input.value = "";
-      filterCourses();
-      input.focus();
-    }
-    // 1. --- UI Element Definitions (ALL at the top) ---
+    // 1. --- UI Element Definitions ---
     const courseSelect = document.getElementById('courseSelect');
     const yearSelect = document.querySelector('select[name="grade_year"]');
     const periodSelect = document.querySelector('select[name="period_id"]');
-    const scholarSelect = document.querySelector('select[name="scholar_type"]'); // Moved up
+    const scholarSelect = document.querySelector('select[name="scholar_type"]');
     
     const autoLoadBtn = document.getElementById('btnAutoLoad');
     const autoLoadContainer = document.getElementById('scholarAutoSuggestContainer');
@@ -269,31 +286,22 @@
         const courseId = courseSelect.value;
         const yearLevel = yearSelect.value;
         const periodId = periodSelect.value;
-        const scholarType = scholarSelect.value;
-
-        // CRITICAL: Only auto-fetch if it's a scholar type
-        if (scholarType !== 'scholar' && scholarType !== 'half-scholar') {
-            return; 
-        }
-
-        // Don't fetch if basic info is missing
+        
         if (!courseId || !yearLevel || !periodId) return;
 
         try {
             chosenCard.classList.add('card-loading');
-            
             const url = `/student/enroll/suggested-subjects?course_id=${courseId}&year_level=${encodeURIComponent(yearLevel)}&period_id=${periodId}`;
             const response = await fetch(url);
             
             if (!response.ok) throw new Error('Network response was not ok');
             const subjects = await response.json();
 
-            // Clear existing before adding new suggested ones
             clearChosenSubjects();
 
             if (subjects.length > 0) {
                 subjects.forEach(s => {
-                    addSubjectToChosen(s.id, s.subject_code, s.subject_title, s.units);
+                    addSubjectToChosen(s.id, s.subject_code, s.subject_title, s.units, true);
                 });
                 sortChosenSubjects();
             }
@@ -305,8 +313,25 @@
     }
 
     // 3. --- Helper Functions ---
-    function addSubjectToChosen(id, code, desc, units) {
+    function addSubjectToChosen(id, code, desc, units, isAutoLoad = false) {
         if (document.getElementById(`chosen-${id}`)) return;
+
+        if (!isAutoLoad) {
+            const yearLevel = yearSelect.value;
+            const periodText = periodSelect.options[periodSelect.selectedIndex]?.text.toLowerCase() || "";
+            const isEligibleYear = (yearLevel === "4th Year" || yearLevel === "5th Year" || yearLevel === "Irregular");
+            const isSummer = periodText.includes("summer");
+
+            if (!isEligibleYear && !isSummer) {
+                alert("Manual adding of subjects is only allowed for 4th Year, 5th Year, or Summer terms.");
+                return;
+            }
+        }
+
+        if (selectedCount >= 8) {
+            if(!isAutoLoad) alert("You can only select up to 8 subjects.");
+            return;
+        }
 
         emptyPlaceholder.style.display = 'none';
         selectedUnits += parseInt(units);
@@ -331,8 +356,23 @@
             addBtn.classList.add('disabled');
             addBtn.innerText = 'Added';
         }
-        sortChosenSubjects();
         updateUI();
+    }
+
+    function updateButtonStates() {
+        const yearLevel = yearSelect.value;
+        const periodText = periodSelect.options[periodSelect.selectedIndex]?.text.toLowerCase() || "";
+        const isEligible = (yearLevel === "4th Year" || yearLevel === "5th Year" || periodText.includes("summer"));
+
+        document.querySelectorAll('.add-subject').forEach(btn => {
+            if (!isEligible) {
+                btn.classList.add('opacity-50');
+                btn.title = "Only available for 4th/5th Year or Summer";
+            } else {
+                btn.classList.remove('opacity-50');
+                btn.title = "";
+            }
+        });
     }
 
     function clearChosenSubjects() {
@@ -348,64 +388,48 @@
         updateUI();
     }
 
+    function sortChosenSubjects() {
+        const rows = Array.from(chosenBody.querySelectorAll('tr:not(#emptyPlaceholder)'));
+        rows.sort((a, b) => {
+            const codeA = a.querySelector('td:first-child').textContent.trim().toLowerCase();
+            const codeB = b.querySelector('td:first-child').textContent.trim().toLowerCase();
+            return codeA.localeCompare(codeB);
+        });
+        rows.forEach(row => chosenBody.appendChild(row));
+    }
+
     function updateUI() {
         totalUnitsEl.innerText = selectedUnits;
         subjectCountEl.innerText = selectedCount;
     }
 
     // 4. --- Event Listeners ---
-    scholarSelect.addEventListener('change', function() {
-      if (this.value === 'scholar' || this.value === 'half-scholar') {
-        autoLoadContainer.classList.remove('d-none');
-      } else {
-        autoLoadContainer.classList.add('d-none');
-        // Clear subjects if they are no longer a scholar
-        clearChosenSubjects(); 
-      }
-    });
-    // Update search input when a course is selected from the list
-    courseSelect.addEventListener('change', function() {
-      const selectedOption = this.options[this.selectedIndex];
-      if (selectedOption && selectedOption.id !== 'coursePlaceholder') {
-        const courseName = selectedOption.text;
-        document.getElementById('courseSearchInput').value = courseName;
-        
-        // Optional: Re-run filter so only the selected one shows, 
-        // or just leave it as is so the user sees their choice clearly.
-        filterCourses(); 
-      }
-    });
-    // Trigger auto-load when ANY relevant dropdown changes
-    [courseSelect, yearSelect, periodSelect, scholarSelect].forEach(el => {
+    [courseSelect, yearSelect, periodSelect].forEach(el => {
         el.addEventListener('change', () => {
-            // Toggle the "Magic Button" visibility
-            if (scholarSelect.value === 'scholar' || scholarSelect.value === 'half-scholar') {
-                autoLoadContainer.classList.remove('d-none');
-            } else {
-                autoLoadContainer.classList.add('d-none');
-            }
-            // Run the auto-fetch
+            updateButtonStates();
             fetchSuggestedSubjects();
         });
     });
 
-    // Manual "Magic Button" click
-    autoLoadBtn.addEventListener('click', async function() {
+    scholarSelect.addEventListener('change', function() {
+        autoLoadContainer.classList.toggle('d-none', !(this.value === 'scholar' || this.value === 'half-scholar'));
+    });
+
+    autoLoadBtn.addEventListener('click', () => {
         if (!courseSelect.value || !yearSelect.value || !periodSelect.value) {
             alert("Please select Academic Period, Course, and Year Level first!");
             return;
         }
-        await fetchSuggestedSubjects();
+        fetchSuggestedSubjects();
     });
 
-    // Manual Add buttons (from Available table)
     document.querySelectorAll('.add-subject').forEach(btn => {
         btn.addEventListener('click', function() {
-            addSubjectToChosen(this.dataset.id, this.dataset.code, this.dataset.desc, this.dataset.units);
+            addSubjectToChosen(this.dataset.id, this.dataset.code, this.dataset.desc, this.dataset.units, false);
+            sortChosenSubjects();
         });
     });
 
-    // Remove buttons (from Chosen table)
     chosenBody.addEventListener('click', function(e) {
         const btn = e.target.closest('.remove-subject');
         if (btn) {
@@ -424,12 +448,71 @@
         }
     });
 
-    // Subject Search (Filtering Available Table)
+    // Course Search logic
+    function filterCourses() {
+        const filter = document.getElementById('courseSearchInput').value.toLowerCase();
+        const options = courseSelect.getElementsByTagName('option');
+        const noResult = document.getElementById('noCourseMessage');
+        let hasMatch = false;
+
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].id === 'coursePlaceholder') continue;
+            const txt = options[i].textContent.toLowerCase();
+            const match = txt.indexOf(filter) > -1;
+            options[i].style.display = match ? "" : "none";
+            if (match) hasMatch = true;
+        }
+        noResult.classList.toggle('d-none', hasMatch || filter === "");
+    }
+
+    courseSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption && selectedOption.id !== 'coursePlaceholder') {
+            document.getElementById('courseSearchInput').value = selectedOption.text;
+            filterCourses();
+        }
+    });
+
     document.getElementById('subjectSearch').addEventListener('keyup', function() {
         const value = this.value.toLowerCase();
         document.querySelectorAll('#availableTable tbody tr').forEach(row => {
-            if (row.id === 'emptyPlaceholder') return;
             row.style.display = row.innerText.toLowerCase().includes(value) ? '' : 'none';
         });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateButtonStates();
+    });
+
+    // 5. --- Modal & Form Submission Logic ---
+    window.prepareConfirmation = function() {
+        // Validation: Ensure at least one subject and all headers are filled
+        if (selectedCount === 0) {
+            alert("Please select at least one subject before submitting.");
+            return;
+        }
+
+        if (!courseSelect.value || !yearSelect.value || !periodSelect.value) {
+            alert("Please fill out all enrollment details (Period, Course, Year) first.");
+            return;
+        }
+
+        // Populate Modal Fields
+        const periodText = periodSelect.options[periodSelect.selectedIndex].text;
+        document.getElementById('modalPeriodText').innerText = periodText;
+        document.getElementById('modalSubjectCount').innerText = selectedCount;
+        document.getElementById('modalTotalUnits').innerText = selectedUnits;
+
+        // Show Modal using Bootstrap's API
+        const modalElement = document.getElementById('confirmModal');
+        const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modalInstance.show();
+    };
+
+    document.getElementById('confirmSubmitBtn').addEventListener('click', function() {
+        const enrollmentForm = document.getElementById('enrollmentForm');
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+        enrollmentForm.submit();
     });
 </script>

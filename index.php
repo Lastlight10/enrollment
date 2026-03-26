@@ -24,7 +24,7 @@ $router->group('/auth', function($router) {
   $router->get('/register', 'Controllers\AuthController@showRegister');
   $router->post('/register', 'Controllers\AuthController@register');
 
-  $router->get('/verify-email', 'Controllers\AuthController@verify_email');
+  $router->get('/verify_email', 'Controllers\AuthController@verify_email');
 
   $router->get('/login', 'Controllers\AuthController@showLogin');
   $router->get('/authorize', 'Controllers\AuthController@showAuthorize');

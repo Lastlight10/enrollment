@@ -8,6 +8,7 @@ class User extends Model {
     public $timestamps = true;
 
     protected $fillable = [
+        'id_number',
         'username',
         'email',
         'password',

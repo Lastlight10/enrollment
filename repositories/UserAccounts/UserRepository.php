@@ -126,79 +126,164 @@ class UserRepository extends Repository
     }
     return false;
 }
-  public function sendPendingApprovalEmail($recipientEmail) {
-  $client = new \Google\Client();
-  $user = $this->findByEmail($recipientEmail); // Get user to check status
+  public function sendVerificationEmail($recipientEmail)
+  {
+    $client = new \Google\Client();
+    $user = $this->findByEmail($recipientEmail);
+
+    if (!$user) return;
+
+    // Generate a unique token for verification
+    $token = bin2hex(random_bytes(32));
+    $user->update(['verification_token' => $token]);
+
+    $client->setAuthConfig(BASE_PATH . '/credentials.json');
+    $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
+
+    if ($client->isAccessTokenExpired()) {
+      $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+      file_put_contents(BASE_PATH . '/token.json', json_encode($client->getAccessToken()));
+    }
+
+    $service = new \Google\Service\Gmail($client);
+    $verifyUrl = "https://enrollment.great-site.net/auth/verify_email?token=" . $user->verification_token;
   
-  $client->setAuthConfig(BASE_PATH . '/credentials.json');
-  $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
+    $body = "
+    <html>
+    <body style='font-family: Arial, sans-serif;'>
+      <div style='max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px;'>
+        <h2>Welcome, " . htmlspecialchars($user->username) . "!</h2>
+        <p>Thank you for registering. To complete your enrollment and receive your <b>Student ID Number</b>, please verify your email.</p>
+        <div style='text-align: center;'>
+          <a href='$verifyUrl' style='background: #007bff; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px;'>Verify Email Now</a>
+        </div>
+      </div>
+    </body>
+    </html>";
 
-  if ($client->isAccessTokenExpired()) {
-    $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
-    file_put_contents(BASE_PATH . '/token.json', json_encode($client->getAccessToken()));
+    $strRawMessage = "To: $recipientEmail\r\n";
+    $strRawMessage .= "Subject: Action Required: Verify Your Account\r\n";
+    $strRawMessage .= "MIME-Version: 1.0\r\n";
+    $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
+    $strRawMessage .= $body;
+
+    $mime = rtrim(strtr(base64_encode($strRawMessage), '+/', '-_'), '=');
+    $msg = new \Google\Service\Gmail\Message();
+    $msg->setRaw($mime);
+
+    try {
+      $service->users_messages->send("me", $msg);
+    } catch (\Exception $e) {
+      error_log("Gmail API Error: " . $e->getMessage());
+    }
   }
-  
-  $service = new \Google\Service\Gmail($client);
+  public function sendAccountActivatedEmail($user)
+  {
+    $client = new \Google\Client();
+    $client->setAuthConfig(BASE_PATH . '/credentials.json');
+    $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
 
-  // Determine message based on status
-  if ($user->status === 'active') {
-    $statusTitle = "Account Activated!";
-    $statusMessage = "Your account has been verified. You can now log in to the system.";
-    $buttonText = "Login Now";
-    $buttonUrl = "https://enrollment.great-site.net/auth/login";
-    $color = "#28a745"; // Green
-  } else {
-    $statusTitle = "Pending Approval";
-    $statusMessage = "Your account details have been updated. Please wait for a staff member to verify your account.";
-    $buttonText = "View Site";
-    $buttonUrl = "https://enrollment.great-site.net/";
-    $color = "#ffc107"; // Yellow/Gold
-  }
+    if ($client->isAccessTokenExpired()) {
+      $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+      file_put_contents(BASE_PATH . '/token.json', json_encode($client->getAccessToken()));
+    }
 
-  $subject = "Account Status: " . $statusTitle;
+    $service = new \Google\Service\Gmail($client);
+    $username = trim("{$user->username}");
+    $fullName = trim("{$user->first_name} {$user->mid_name} {$user->last_name}");
+    $statusLabel = ($user->status === 'active') ? 'Active' : 'Inactive';
+    
+    $body = "
+    <html>
+    <body style='font-family: Arial, sans-serif; color: #333;'>
+      <div style='max-width: 600px; margin: 0 auto; border: 1px solid #28a745; border-radius: 8px; overflow: hidden;'>
+        <div style='background-color: #28a745; color: white; padding: 20px; text-align: center;'>
+          <h2 style='margin: 0;'>Account Activated Successfully!</h2>
+        </div>
+        <div style='padding: 25px;'>
+          <p>Hello <b>" . htmlspecialchars($user->username) . "</b>,</p>
+          <p>Your account has been successfully verified. Here are your official enrollment details:</p>
+          
+          <table style='width: 100%; border-collapse: collapse; margin-top: 15px;'>
+            <tr>
+              <td style='padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;'>Full Name:</td>
+              <td style='padding: 8px; border-bottom: 1px solid #eee;'>" . htmlspecialchars($fullName) . "</td>
+            </tr>
+            <tr>
+              <td style='padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;'>Username:</td>
+              <td style='padding: 8px; border-bottom: 1px solid #eee;'>" . htmlspecialchars($username) . "</td>
+            </tr>
+            <tr>
+              <td style='padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;'>Email Address:</td>
+              <td style='padding: 8px; border-bottom: 1px solid #eee;'>" . htmlspecialchars($user->email) . "</td>
+            </tr>
+            <tr>
+              <td style='padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;'>Student ID:</td>
+              <td style='padding: 8px; border-bottom: 1px solid #eee; color: #28a745; font-weight: bold; font-size: 1.1em;'>" . $user->id_number . "</td>
+            </tr>
+            <tr>
+              <td style='padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;'>Account Status:</td>
+              <td style='padding: 8px; border-bottom: 1px solid #eee;'><span style='color: #28a745;'>● $statusLabel</span></td>
+            </tr>
+          </table>
 
-  // HTML Body with CSS
-  $body = "
-  <html>
-  <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-    <div style='max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;'>
-      <div style='background-color: $color; padding: 20px; text-align: center;'>
-        <h1 style='color: white; margin: 0;'>$statusTitle</h1>
+          <div style='text-align: center; margin-top: 30px;'>
+            <a href='https://enrollment.great-site.net/auth/login' style='background-color: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;'>Login to Portal</a>
+          </div>
+        </div>
+        <div style='background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 11px; color: #888;'>
+          Please keep this email for your records. If you did not register for this account, please ignore this email.
+        </div>
       </div>
-      <div style='padding: 30px; text-align: center;'>
-        <p style='font-size: 18px;'>Hello, <b>" . htmlspecialchars($user->username ?? 'User') . "</b></p>
-        <p>$statusMessage</p>
-        <a href='$buttonUrl' style='display: inline-block; padding: 12px 25px; margin-top: 20px; background-color: $color; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;'>$buttonText</a>
-      </div>
-      <div style='background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
-        &copy; 2026 Enrollment System. All rights reserved.
-      </div>
-    </div>
-  </body>
-  </html>";
+    </body>
+    </html>";
 
-  // Gmail API requires a specific MIME format for HTML
-  $strRawMessage = "To: $recipientEmail\r\n";
-  $strRawMessage .= "Subject: $subject\r\n";
-  $strRawMessage .= "MIME-Version: 1.0\r\n";
-  $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
-  $strRawMessage .= $body;
+    $strRawMessage = "To: {$user->email}\r\n";
+    $strRawMessage .= "Subject: Welcome! Your Account is Now Active\r\n";
+    $strRawMessage .= "MIME-Version: 1.0\r\n";
+    $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
+    $strRawMessage .= $body;
 
-  $mime = rtrim(strtr(base64_encode($strRawMessage), '+/', '-_'), '=');
-  $msg = new \Google\Service\Gmail\Message();
-  $msg->setRaw($mime);
+    $mime = rtrim(strtr(base64_encode($strRawMessage), '+/', '-_'), '=');
+    $msg = new \Google\Service\Gmail\Message();
+    $msg->setRaw($mime);
 
-  try {
     $service->users_messages->send("me", $msg);
-  } catch (\Exception $e) {
-    error_log("Gmail API Error: " . $e->getMessage());
   }
+
+  // Ensure your findByToken looks in the User model, not Subject
+  public function findByVerificationToken($token)
+  {
+    return User::where('verification_token', $token)->first();
+  }
+/**
+   * Find an existing enrollment record for a specific user and academic period.
+   * Assumes you have an Enrollment model.
+   */
+  
+  // Inside UserRepository class
+  public function generateNextIdNumber() 
+  {
+    $yearPrefix = date('y'); // "26"
+    
+    $latest = User::where('id_number', 'LIKE', $yearPrefix . '%')
+                  ->orderBy('id_number', 'DESC')
+                  ->first();
+
+    if ($latest && !empty($latest->id_number)) {
+      // Just add 1 to the whole integer
+      return (string)((int)$latest->id_number + 1);
+    }
+
+    // Start: 26 + 00001 = 2600001
+    return $yearPrefix . "00001"; 
   }
 
   public function createAccount(array $data)
   {
     return User::create($data);
   }
+  
 
   public function updateAccount($id, array $data)
   {

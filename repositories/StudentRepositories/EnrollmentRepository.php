@@ -3,6 +3,7 @@ namespace App\Repositories\StudentRepositories;
 
 use App\Core\Repository;
 use Models\Enrollment;
+use Models\EnrolledSubject;
 use Models\Payment;
 use Models\Curriculum;
 use Models\AcademicPeriod;
@@ -81,5 +82,35 @@ class EnrollmentRepository extends Repository{
     ]);
   }
   // In AcademicPeriodRepository.php
-  
+  public function findExistingEnrollment($userId, $periodId)
+  {
+    // Use the model instead of $this->db for consistency
+    return Enrollment::where('user_id', $userId)
+      ->where('period_id', $periodId)
+      ->first(); 
+  }
+
+  /**
+   * Removes a previous 'rejected' attempt so the student can re-apply.
+   */
+  public function clearPreviousAttempt($enrollmentId)
+  {
+    // Use the model's connection to handle the transaction
+    $connection = Enrollment::getConnectionResolver()->connection();
+    $connection->beginTransaction();
+
+    try {
+      // 1. Delete associated subjects (Assuming a pivot table or related model)
+      EnrolledSubject::where('enrollment_id', $enrollmentId)->delete();
+
+      // 2. Delete the main enrollment record
+      Enrollment::where('id', $enrollmentId)->delete();
+
+      $connection->commit();
+      return true;
+    } catch (\Exception $e) {
+      $connection->rollBack();
+      throw new \Exception("Failed to clear previous enrollment: " . $e->getMessage());
+    }
+  }
 }

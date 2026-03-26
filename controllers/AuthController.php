@@ -58,7 +58,8 @@ class AuthController extends Controller
 
       $_SESSION['user_id'] = $user->id;
       $_SESSION['user_type'] = $user->type;
-       $_SESSION['user_name'] = $user->username;
+      $_SESSION['user_name'] = $user->username;
+      $_SESSION['id_number'] = $user->id_number;
 
       Logger::log("LOGIN SUCCESS: User {$user->username} logged in.");
       $_SESSION['success'] = "Successfully logged in as " . $user->username;
@@ -80,72 +81,74 @@ class AuthController extends Controller
     $this->view('login/register', ['title' => 'Create Account'], 'default');
   }
 
-public function register(Request $request)
-{
-  $username = $this->input('username');
-  $email = $this->input('email');
+  public function register(Request $request)
+  {
+    $username = $this->input('username');
+    $email = $this->input('email');
 
-  // 1. Explicit Check for Duplicates
-  $duplicateError = $this->userRepo->isDuplicate($username, $email);
-  if ($duplicateError) {
+    $duplicateError = $this->userRepo->isDuplicate($username, $email);
+    if ($duplicateError) {
       return $this->view('login/register', ['error' => $duplicateError], 'default');
-  }
-
-  $data = [
-    'username'   => $username,
-    'password'   => password_hash($this->input('password'), PASSWORD_BCRYPT), // Don't forget to hash!
-    'email'      => $email,
-    'first_name' => $this->input('first_name'),
-    'mid_name'   => $this->input('mid_name'),
-    'last_name'  => $this->input('last_name'),
-    'birth_date' => $this->input('birth_date'),
-    'type'       => 'student',
-    'status'     => 'inactive',
-  ];
-
-  try {
-    // 2. Create the user
-    $user = $this->userRepo->create($data);
-    
-    // 3. Send the Gmail Notification
-    try {
-      $this->userRepo->sendPendingApprovalEmail($user->email);
-      $_SESSION['success'] = "Successfully Registered! Notification sent to " . $user->email;
-    } catch (\Exception $mailEx) {
-      Logger::log("GMAIL API ERROR: " . $mailEx->getMessage());
-      $_SESSION['info'] = "Registered, but email failed. Error: " . $mailEx->getMessage();
     }
 
-    $this->redirect('/auth/login');
+    $data = [
+      'username'   => $username,
+      'password'   => $this->input('password'),
+      'email'      => $email,
+      'first_name' => $this->input('first_name'),
+      'mid_name'   => $this->input('mid_name'),
+      'last_name'  => $this->input('last_name'),
+      'birth_date' => $this->input('birth_date'),
+      'type'       => 'student',
+      'status'     => 'inactive',
+      'verification_token' => bin2hex(random_bytes(32)) // Token created here
+    ];
 
-  } catch (\Exception $e) {
-    // Log the ACTUAL error message to see if it's a SQL error
-    Logger::log("REGISTRATION CRITICAL ERROR: " . $e->getMessage());
-    
-    // Show the actual error to you while debugging
-    $displayError = (strpos($e->getMessage(), 'Duplicate') !== false) 
-                  ? 'Username or Email already exists.' 
-                  : 'System error during registration. Please check logs.';
-                    
-    $this->view('login/register', ['error' => $displayError], 'default');
+    try {
+      $user = $this->userRepo->create($data);
+      $this->userRepo->sendVerificationEmail($user->email);
+      
+      $_SESSION['success'] = "Registration successful! Please check your email to verify your account.";
+      $this->redirect('/auth/login');
+    } catch (\Exception $e) {
+      Logger::log("REGISTRATION ERROR: " . $e->getMessage());
+      $this->view('login/register', ['error' => 'System error during registration.'], 'default');
+    }
   }
-}
 
   public function verify_email()
   {
     $token = $_GET['token'] ?? '';
-    if (empty($token)) {
-      $_SESSION['error'] = "Invalid verification link.";
-      $this->redirect('/auth/login');
-      return;
-    }
-    
+    $user = $this->userRepo->findByVerificationToken($token);
 
-    $user = $this->userRepo->findByToken($token);
     if ($user) {
-      $this->userRepo->update($user->id, ['status' => 'active', 'verification_token' => null]);
-      Logger::log("USER ACTIVATED: ID {$user->id}");
-      $_SESSION['success'] = "Account verified! You can now log in.";
+      // 1. Generate the next available ID
+      $idNumber = $this->userRepo->generateNextIdNumber();
+
+      // 2. Update the database
+      $updated = $this->userRepo->update($user->id, [
+        'id_number' => $idNumber,
+        'status'    => 'active', 
+        'verification_token' => null
+      ]);
+
+      if ($updated) {
+        // 3. Manually update the object properties so the email helper has the data
+        $user->id_number = $idNumber;
+        $user->status = 'active';
+
+        // 4. Send the Final Account Details Email
+        try {
+          $this->userRepo->sendAccountActivatedEmail($user);
+          Logger::log("ACTIVATION EMAIL SENT: {$user->email}");
+        } catch (\Exception $e) {
+          Logger::log("GMAIL ERROR (Activation): " . $e->getMessage());
+        }
+
+        Logger::log("USER ACTIVATED & ID ASSIGNED: ID {$user->id} -> $idNumber");
+        $_SESSION['success'] = "Email verified! Your Student ID is: <b>$idNumber</b>. Check your inbox for your account details.";
+      }
+
       $this->redirect('/auth/login');
     } else {
       $this->view('login/login', ['error' => 'Invalid or expired verification link.'], 'default');

@@ -55,43 +55,58 @@ class StudentEnrollmentController extends Controller
 
   public function submit(Request $request)
   {
-    try {
-      $userId = $_SESSION['user_id'];
-      $data = $request->all();
-      
-      // Ensure we are getting the subjects array from our hidden inputs
-      $subjectIds = $data['subjects'] ?? [];
+  try {
+    $userId = $_SESSION['user_id'];
+    $data = $request->all();
+    $periodId = $data['period_id'] ?? null;
+    $subjectIds = $data['subjects'] ?? [];
 
-      // Basic Validation
-      if (empty($data['period_id'])) {
-        throw new Exception("Please select an academic period.");
+    // 1. Basic Validation
+    if (empty($periodId)) throw new Exception("Please select an academic period.");
+    if (empty($subjectIds)) throw new Exception("Please select at least one subject.");
+
+    // 2. Check for existing application
+    $existing = $this->enrollRepo->findExistingEnrollment($userId, $periodId);
+
+    if ($existing) {
+      $status = $existing->status; 
+
+      // CASE: DROPPED - Permanent block for this period
+      if ($status === 'dropped') {
+        $_SESSION['error'] = "This enrollment has been dropped and cannot be re-submitted for this period.";
+        return $this->redirect('/student/enroll');
       }
-      
-      if (empty($data['course_id'])) {
-        throw new Exception("Please select your course.");
+
+      // CASE: PENDING or ENROLLED - Active block
+      if ($status === 'pending' || $status === 'enrolled') {
+        $_SESSION['error'] = ($status === 'enrolled') 
+          ? "You are already officially enrolled for this period." 
+          : "You already have a pending application. Please wait for approval.";
+        return $this->redirect('/student/enroll');
       }
 
-      if (empty($subjectIds)) {
-        throw new Exception("Please select at least one subject to proceed.");
+      // CASE: REJECTED - Clear old data and allow fresh re-submission
+      if ($status === 'rejected') {
+        $this->enrollRepo->clearPreviousAttempt($existing->id); 
       }
-
-      // Pass the sanitized data to the repository
-      // The repository should handle the DB transaction for both 'enrollments' and 'enrolled_subjects'
-      $this->enrollRepo->enroll($userId, $data, $subjectIds);
-
-      $_SESSION['success'] = "Enrollment submitted successfully! Please settle your payment to finalize admission.";
-      return $this->redirect('/student/dashboard');
-
-    } catch (Exception $e) {
-      if ($e->getCode() == 23000 || str_contains($e->getMessage(), '1062')) {
-          $_SESSION['error'] = "You have already submitted an application for this academic period.";
-      } else {
-          $_SESSION['error'] = "An unexpected error occurred. Please try again.";
-      }
-      
-      return $this->redirect('/student/enroll');
     }
+
+    // 3. Proceed with Enrollment (For brand new or previously rejected)
+    $this->enrollRepo->enroll($userId, $data, $subjectIds);
+
+    $_SESSION['success'] = "Enrollment submitted successfully!";
+    return $this->redirect('/student/dashboard');
+
+  } catch (Exception $e) {
+    if ($e->getCode() == 23000 || str_contains($e->getMessage(), '1062')) {
+      $_SESSION['error'] = "An active application already exists for this period.";
+    } else {
+      $_SESSION['error'] = $e->getMessage() ?: "An unexpected error occurred.";
+    }
+    return $this->redirect('/student/enroll');
   }
+  }
+  
   public function viewDetails(Request $request, $id)
   {
     // Now $id will correctly be the number '1' from the URL
@@ -122,7 +137,7 @@ class StudentEnrollmentController extends Controller
 
         // 2. Ensure Repository is initialized (if not already in __construct)
         if (!$this->enrollRepo) {
-            $this->enrollRepo = new \App\Repositories\StudentRepositories\EnrollmentRepository();
+            $this->enrollRepo = new StudentEnrollmentRepo();
         }
 
         // 3. Find the Period
