@@ -65,10 +65,10 @@
         <input type="date" name="birth_date" class="form-control" min="1960-01-01" max="2010-01-01" required >
       </div>
       <div class="col-md-6 mb-3">
-        <label class="form-label">Password</label>
+        <label class="form-label">Password (6-30)</label>
         <div class="input-group">
           <input type="password" name="password" id="regPassword" class="form-control" required 
-          oninput="this.value = this.value.replace(/\s+/g, '')" maxlength="30">
+          oninput="this.value = this.value.replace(/\s+/g, '')" minlength="6" maxlength="30">
           <button class="btn btn-outline-secondary" type="button" id="toggleRegPassword">Show</button>
         </div>
       </div>
