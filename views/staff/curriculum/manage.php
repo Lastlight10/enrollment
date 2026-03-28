@@ -1,3 +1,19 @@
+<style>
+  #selectedSummaryList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    background-image: linear-gradient(45deg, #f8f9fa 25%, transparent 25%, transparent 75%, #f8f9fa 75%, #f8f9fa), 
+                      linear-gradient(45deg, #f8f9fa 25%, transparent 25%, transparent 75%, #f8f9fa 75%, #f8f9fa);
+    background-size: 10px 10px;
+    background-position: 0 0, 5px 5px;
+  }
+
+  .subject-item:hover {
+    background-color: #f1f3f5;
+    cursor: pointer;
+  }
+</style>
 <div class="container py-4">
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
@@ -31,7 +47,32 @@
       </button>
     </div>
   </div>
+  <?php if (isset($_SESSION['error'])): ?>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <?= $_SESSION['error'] ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <?php unset($_SESSION['error']); ?>
+<?php endif; ?>
 
+<?php if (isset($_SESSION['success'])): ?>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i>
+    <?= $_SESSION['success'] ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <?php unset($_SESSION['success']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['info'])): ?>
+  <div class="alert alert-info alert-dismissible fade show" role="alert">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    <?= $_SESSION['info'] ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <?php unset($_SESSION['info']); ?>
+<?php endif; ?>
   <div class="card border-0 shadow-sm">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0" id="curriculumTable">
@@ -41,7 +82,7 @@
             <th>Semester</th>
             <th>Subject</th>
             <th class="text-center">Units</th>
-            <th class="text-end pe-4">Actions</th>
+            <th class="text-end pe-4">Actions</th> <!-- Header stays clean -->
           </tr>
         </thead>
         <tbody>
@@ -58,7 +99,23 @@
                 </td>
                 <td class="text-center"><?= $s->units ?></td>
                 <td class="text-end pe-4">
-                   </td>
+                  <!-- ACTION BUTTONS MOVED HERE -->
+                  <div class="btn-group shadow-sm">
+                    <button type="button" 
+                            class="btn btn-white btn-sm border" 
+                            onclick="editCurriculum(<?= $s->id ?>, '<?= $s->pivot->year_level ?>', '<?= $s->pivot->semester ?>')"
+                            title="Change Placement">
+                      <i class="bi bi-pencil-square text-info"></i>
+                    </button>
+                    
+                    <button type="button" 
+                            class="btn btn-white btn-sm border" 
+                            onclick="confirmDelete(<?= $s->id ?>, '<?= $s->subject_code ?>')"
+                            title="Remove from Curriculum">
+                      <i class="bi bi-trash3 text-danger"></i>
+                    </button>
+                  </div>
+                </td>
               </tr>
             <?php endforeach; ?>
           <?php else: ?>
@@ -102,6 +159,13 @@
               </div>
             <?php endforeach; ?>
           </div>
+        </div>
+        <div id="selectedPreviewContainer" class="mb-3 d-none">
+          <label class="form-label fw-bold text-success small">
+            <i class="bi bi-check-circle-fill"></i> Ready to Add:
+          </label>
+          <div id="selectedSummaryList" class="p-2 border rounded bg-white" style="max-height: 100px; overflow-y: auto;">
+            </div>
         </div>
 
         <div class="row">
@@ -271,4 +335,54 @@
       item.style.display = text.includes(filter) ? '' : 'none';
     });
   }
+  function updateSelectedPreview() {
+    const previewContainer = document.getElementById('selectedPreviewContainer');
+    const summaryList = document.getElementById('selectedSummaryList');
+    const checkedBoxes = document.querySelectorAll('.subject-checkbox:checked');
+    
+    // Clear the current preview
+    summaryList.innerHTML = '';
+
+    if (checkedBoxes.length > 0) {
+        previewContainer.classList.remove('d-none');
+        
+        checkedBoxes.forEach(cb => {
+            // Find the code and title from the associated label
+            const label = document.querySelector(`label[for="${cb.id}"]`);
+            const code = label.querySelector('.fw-bold').innerText;
+            
+            // Create a small removable badge for each selected item
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-light text-dark border me-1 mb-1 d-inline-flex align-items-center';
+            badge.style.fontSize = '0.75rem';
+            badge.innerHTML = `
+                ${code} 
+                <i class="bi bi-x-lg ms-2 text-danger" 
+                   style="cursor:pointer" 
+                   onclick="document.getElementById('${cb.id}').click()"></i>
+            `;
+            summaryList.appendChild(badge);
+        });
+    } else {
+        previewContainer.classList.add('d-none');
+    }
+}
+
+// Update your existing toggleAllCheckboxes to call this
+function toggleAllCheckboxes(master) {
+    const checkboxes = document.querySelectorAll('.subject-checkbox');
+    checkboxes.forEach(cb => {
+        if (cb.closest('.subject-item').style.display !== 'none') {
+            cb.checked = master.checked;
+        }
+    });
+    updateSelectedPreview(); // New call
+}
+
+// Listen for any checkbox change inside the modal
+document.getElementById('checkboxList').addEventListener('change', function(e) {
+    if (e.target.classList.contains('subject-checkbox')) {
+        updateSelectedPreview();
+    }
+});
 </script>

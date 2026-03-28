@@ -55,7 +55,6 @@
         <tr>
           <th class="ps-3">Course Code</th>
           <th>Course Name</th>
-          <th>Created At</th>
           <th class="text-center">Actions</th>
         </tr>
       </thead>
@@ -67,9 +66,12 @@
         <?php else: ?>
           <?php foreach($courses as $course): ?>
             <tr>
-              <td class="ps-3 fw-bold text-primary"><?= htmlspecialchars($course->course_code) ?></td>
-              <td class="searchable-name"><?= htmlspecialchars($course->course_name) ?></td>
-              <td class="small text-muted"><?= date('M d, Y', strtotime($course->created_at)) ?></td>
+              <td class="ps-3 fw-bold text-primary searchable-code">
+                <?= htmlspecialchars($course->course_code) ?>
+              </td>
+              <td class="searchable-name">
+                <?= htmlspecialchars($course->course_name) ?>
+              </td>
               <td class="text-center">
                 <div class="btn-group btn-group-sm">
                   <button class="btn btn-outline-primary" onclick='editCourse(<?= json_encode($course) ?>)' title="Edit Course">
@@ -104,10 +106,10 @@
             class="form-control" 
             placeholder="e.g., BSIT" 
             required 
-            maxlength="5"
-            pattern="[A-Z]{1,5}"
+            maxlength="6"
+            pattern="[A-Z]{1,6}"
             oninput="this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '');"
-            title="Please use capital letters only (max 5 characters)">
+            title="Please use capital letters only (max 6 characters)">
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold">Course Name</label>
@@ -120,7 +122,7 @@
             pattern="[A-Za-z\s]+"
             oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '');"
             title="Please enter letters and spaces only"
-            maxlength="50">
+            maxlength="80">
         </div>
       </div>
       <div class="modal-footer">
@@ -188,31 +190,32 @@
       window.location.href = '/staff/courses/delete/' + id;
     }
   }
-  function filterCourses() {
-    const input = document.getElementById('courseSearch');
-    const filter = input.value.toLowerCase();
-    const tbody = document.getElementById('courseTableBody');
-    const rows = tbody.getElementsByTagName('tr');
+ function filterCourses() {
+    // 1. Get the search input value
+    const filter = document.getElementById('courseSearch').value.toLowerCase();
+    
+    // 2. Get all rows in the table body
+    const rows = document.querySelectorAll('#courseTableBody tr');
 
-    for (let i = 0; i < rows.length; i++) {
-        // Skip the "No courses found" row if it exists
-        if (rows[i].cells.length < 2) continue;
+    rows.forEach(row => {
+        // Skip the "No courses found" row (it has only 1 cell with colspan)
+        if (row.cells.length < 2) return;
 
-        const codeCell = rows[i].querySelector('.searchable-code');
-        const nameCell = rows[i].querySelector('.searchable-name');
-        
+        // 3. Find the specific cells within the row
+        const codeCell = row.querySelector('.searchable-code');
+        const nameCell = row.querySelector('.searchable-name');
+
         if (codeCell && nameCell) {
-            const codeText = codeCell.textContent || codeCell.innerText;
-            const nameText = nameCell.textContent || nameCell.innerText;
-            
-            // Check if the filter matches either the code OR the name
-            if (codeText.toLowerCase().indexOf(filter) > -1 || 
-                nameText.toLowerCase().indexOf(filter) > -1) {
-                rows[i].style.display = "";
+            const codeText = codeCell.textContent.toLowerCase();
+            const nameText = nameCell.textContent.toLowerCase();
+
+            // 4. If the filter is found in either the code OR the name, show the row
+            if (codeText.includes(filter) || nameText.includes(filter)) {
+                row.style.display = "";
             } else {
-                rows[i].style.display = "none";
+                row.style.display = "none";
             }
         }
-    }
+    });
 }
 </script>

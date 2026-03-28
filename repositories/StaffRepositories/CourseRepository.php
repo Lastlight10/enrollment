@@ -9,7 +9,7 @@ use Models\Course;
 class CourseRepository extends Repository
 {
     public function all() {
-        return Course::all();
+        return Course::all()->sortBy('course_name')->values()->all();
     }
 
     public function create(array $data) {

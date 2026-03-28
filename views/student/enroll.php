@@ -328,8 +328,8 @@
             }
         }
 
-        if (selectedCount >= 8) {
-            if(!isAutoLoad) alert("You can only select up to 8 subjects.");
+        if (selectedCount >= 13) {
+            if(!isAutoLoad) alert("You can only select up to 13 subjects.");
             return;
         }
 

@@ -1,3 +1,5 @@
+
+
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h2>Subject Management</h2>
   <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
@@ -42,7 +44,7 @@
         id="subjectSearch" 
         class="form-control border-start-0 ps-0"
         maxlength="100" 
-        placeholder="Search subject titles..."
+        placeholder="Search subject codes or titles..."
         onkeyup="filterSubjects()"
       >
     </div>
@@ -120,25 +122,33 @@
                 class="form-control text-uppercase" 
                 placeholder="e.g., IPT 101" 
                 required 
-                pattern="^[A-Z0-9\s]+$" 
-                title="Only capital letters, numbers, and spaces are allowed"
+                pattern="^[A-Za-z 0-9\s]+$" 
+                title="Please follow the format."
                 oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9\s]/g, '');"
-                maxlength="10"
+                maxlength="25"
             >
           </div>
           <div class="col-md-4 mb-3">
             <label class="form-label small fw-bold">Units</label>
-            <input type="number" name="units" class="form-control" min="1" max="3" value="0" required
+            <input type="number" name="units" class="form-control" min="1" max="6" value="0" required
               min="1" 
-              max="3" 
+              max="6" 
               required 
-              oninput="if(this.value > 3) this.value = 3; if(this.value.length > 1) this.value = this.value.slice(0, 1);"
-              onkeypress="return /[1-3]/.test(event.key)">
+              oninput="if(this.value > 6) this.value = 6; if(this.value.length > 1) this.value = this.value.slice(0, 1);"
+              onkeypress="return /[1-6]/.test(event.key)">
           </div>
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold">Subject Title</label>
-          <input type="text" name="subject_title" class="form-control" placeholder="e.g., Integrative Programming" required maxlength="100">
+          <textarea 
+            name="subject_title" 
+            class="form-control" 
+            placeholder="e.g., Integrative Programming and Technologies" 
+            required 
+            maxlength="150" 
+            rows="2"
+            style="resize: none;"
+          ></textarea>
         </div>
       </div>
       <div class="modal-footer">
@@ -170,10 +180,10 @@
             <label class="form-label small fw-bold">Subject Code</label>
             <input type="text" name="subject_code" id="edit_subject_code" class="form-control"
               required
-              pattern="^[A-Z0-9\s]+$" 
+              pattern="^[A-Za-z 0-9\s]+$" 
               title="Only capital letters, numbers, and spaces are allowed"
               oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9\s]/g, '');"
-              maxlength="10">
+              maxlength="25">
           </div>
           <div class="col-md-4 mb-3">
             <label class="form-label small fw-bold">Units</label>
@@ -183,16 +193,24 @@
               id="edit_units" 
               class="form-control" 
               min="1" 
-              max="3" 
+              max="6" 
               required 
-              oninput="if(this.value > 3) this.value = 3; if(this.value.length > 1) this.value = this.value.slice(0, 1);"
-              onkeypress="return /[1-3]/.test(event.key)">
+              oninput="if(this.value > 3) this.value = 6; if(this.value.length > 1) this.value = this.value.slice(0, 1);"
+              onkeypress="return /[1-6]/.test(event.key)">
           </div>
         </div>
-        <div class="mb-3">
-          <label class="form-label small fw-bold">Subject Title</label>
-          <input type="text" name="subject_title" id="edit_subject_title" class="form-control" required maxlength="100">
-        </div>
+       <div class="mb-3">
+        <label class="form-label small fw-bold">Subject Title</label>
+        <textarea 
+          name="subject_title" 
+          id="edit_subject_title" 
+          class="form-control" 
+          required 
+          maxlength="150" 
+          rows="2" 
+          style="resize: none;"
+        ></textarea>
+      </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -225,24 +243,36 @@
       window.location.href = '/staff/subjects/delete/' + id;
     }
   }
-  function filterSubjects() {
-  const input = document.getElementById('subjectSearch');
-  const filter = input.value.toLowerCase();
-  const tbody = document.getElementById('subjectTableBody');
-  const rows = tbody.getElementsByTagName('tr');
+function filterSubjects() {
+    const input = document.getElementById('subjectSearch');
+    const filter = input.value.toLowerCase().trim();
+    const tbody = document.getElementById('subjectTableBody');
+    const rows = Array.from(tbody.getElementsByTagName('tr'));
 
-  for (let i = 0; i < rows.length; i++) {
-    // Only search within the "Subject Title" column (index 1)
-    const titleCell = rows[i].getElementsByClassName('subject-title')[0];
-    
-    if (titleCell) {
-      const textValue = titleCell.textContent || titleCell.innerText;
-      if (textValue.toLowerCase().indexOf(filter) > -1) {
-        rows[i].style.display = "";
-      } else {
-        rows[i].style.display = "none";
-      }
-    }
-  }
+    rows.forEach(row => {
+        // Skip the "No subjects found" row
+        if (row.querySelector('td[colspan]')) return;
+
+        const cells = row.getElementsByTagName('td');
+        
+        // Ensure the row has enough cells to check
+        if (cells.length >= 4) {
+            // Get text from Code (0), Title (1), and Course (3)
+            const codeText = (cells[0].textContent || cells[0].innerText).toLowerCase().trim();
+            const titleText = (cells[1].textContent || cells[1].innerText).toLowerCase().trim();
+            const courseText = (cells[3].textContent || cells[3].innerText).toLowerCase().trim();
+            
+            // Match against any of the three columns
+            if (
+                codeText.includes(filter) || 
+                titleText.includes(filter) || 
+                courseText.includes(filter)
+            ) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        }
+    });
 }
 </script>
