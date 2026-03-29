@@ -23,7 +23,7 @@
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body">
                 <h5 class="card-title fw-bold mb-3">Student Information</h5>
-                <p class="mb-1 text-muted small">NAME</p>
+                <p class="mb-1 text-muted small">FULL NAME</p>
                 <p class="fw-bold"><?= htmlspecialchars($e->user?->full_name ?? 'Unknown') ?></p>
                 
                 <p class="mb-1 text-muted small">USERNAME</p>
@@ -33,9 +33,13 @@
                 <p class="fw-bold"><?= htmlspecialchars($e->id_number ?? 'N/A') ?></p>
 
                 <p class="mb-1 text-muted small">SCHOLARSHIP</p>
-                <p class="fw-bold"><?= htmlspecialchars($e->scholar_type ?? 'N/A') ?></p>
-                
-                <hr>
+                <?php 
+                    $scholar = $e->scholar_type ?? 'non_scholar';
+                    $color = 'secondary';
+                    if($scholar == 'half-scholar') $color = 'primary';
+                    if($scholar == 'full-scholar') $color = 'success';
+                ?>
+                <p class="fw-bold text-<?= $color ?> text-uppercase"><?= ucwords(str_replace('_', ' ', $scholar)) ?></p>
                 
                 <h5 class="card-title fw-bold mb-3">Course Details</h5>
                 <p class="mb-1 text-muted small">APPLIED FOR</p>

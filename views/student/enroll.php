@@ -20,6 +20,17 @@
   .btn.opacity-50 {
     cursor: not-allowed !important;
   }
+
+ /* Update these in your <style> tag */
+  #loadingOverlay {
+      transition: opacity 0.3s ease-in-out;
+      backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.8) !important; /* Darker background */
+  }
+
+  #loadingOverlay .text-white-custom {
+      color: #ffffff !important;
+  }
 </style>
 
 <?php if (isset($_SESSION['error'])): ?>
@@ -49,6 +60,15 @@
   <?php unset($_SESSION['info']); ?>
 <?php endif; ?>
 <div class="container py-5">
+
+  <!-- Remove d-none so it shows immediately on page refresh -->
+  <div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="z-index: 9999;">
+    <div class="text-center">
+      <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;"></div>
+      <div id="loaderText" class="mt-3 fw-bold text-white fs-5">Loading Enrollment System...</div>
+    </div>
+  </div>
+
   <form action="/student/enroll/submit" method="POST" id="enrollmentForm">
     <div class="row g-4">
       
@@ -185,7 +205,7 @@
               <tbody>
                 <?php foreach ($subjects as $s): ?>
                   <tr id="row-<?= $s->id ?>">
-                    <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($s->subject_code) ?></span></td>
+                    <td><span class="badge bg-light text-success border"><?= htmlspecialchars($s->subject_code) ?></span></td>
                     <td class="small fw-medium"><?= htmlspecialchars($s->subject_title) ?></td>
                     <td class="text-center"><?= $s->units ?></td>
                     <td class="text-end pe-4">
@@ -262,6 +282,7 @@
     </div>
   </div>
 </div>
+
 <script>
     // 1. --- UI Element Definitions ---
     const courseSelect = document.getElementById('courseSelect');
@@ -281,6 +302,14 @@
     let selectedUnits = 0;
     let selectedCount = 0;
 
+    window.addEventListener('load', function() {
+        const overlay = document.getElementById('loadingOverlay');
+        // Small delay to ensure smooth transition
+        setTimeout(() => {
+            overlay.classList.add('d-none');
+        }, 500);
+    });
+
     // 2. --- Core Logic: Fetch Suggested Subjects ---
     async function fetchSuggestedSubjects() {
         const courseId = courseSelect.value;
@@ -289,6 +318,13 @@
         
         if (!courseId || !yearLevel || !periodId) return;
 
+        const overlay = document.getElementById('loadingOverlay');
+        const loaderText = document.getElementById('loaderText');
+        
+        // Set text specifically for fetching
+        loaderText.innerText = "Updating Recommended Subjects...";
+        overlay.classList.remove('d-none');
+        
         try {
             chosenCard.classList.add('card-loading');
             const url = `/student/enroll/suggested-subjects?course_id=${courseId}&year_level=${encodeURIComponent(yearLevel)}&period_id=${periodId}`;
@@ -309,6 +345,8 @@
             console.error("Fetch error:", error);
         } finally {
             chosenCard.classList.remove('card-loading');
+            // Hide overlay again
+            overlay.classList.add('d-none');
         }
     }
 
@@ -511,8 +549,33 @@
 
     document.getElementById('confirmSubmitBtn').addEventListener('click', function() {
         const enrollmentForm = document.getElementById('enrollmentForm');
+
+        const overlay = document.getElementById('loadingOverlay');
+        overlay.querySelector('.mt-2').innerText = "Submitting Application...";
+        overlay.classList.remove('d-none');
+
         this.disabled = true;
         this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
         enrollmentForm.submit();
     });
+    function resetCourseFilter() {
+    // 1. Clear the search input text
+    const searchInput = document.getElementById('courseSearchInput');
+    searchInput.value = "";
+
+    // 2. Reset the dropdown selection to the placeholder
+    courseSelect.value = "";
+
+    // 3. Make all course options visible again
+    const options = courseSelect.getElementsByTagName('option');
+    for (let i = 0; i < options.length; i++) {
+        options[i].style.display = "";
+    }
+
+    // 4. Hide the "No matching courses" message
+    document.getElementById('noCourseMessage').classList.add('d-none');
+
+    // 5. Refocus the search input for convenience
+    searchInput.focus();
+}
 </script>

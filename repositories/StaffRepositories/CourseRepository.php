@@ -8,6 +8,12 @@ use Models\Course;
 
 class CourseRepository extends Repository
 {
+    public function allNoGe() {
+        return Course::where('id', '!=', '2')// 2 is id for course GE
+            ->orderBy('course_name')
+            ->get();
+    }
+
     public function all() {
         return Course::all()->sortBy('course_name')->values()->all();
     }

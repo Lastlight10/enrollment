@@ -48,7 +48,7 @@ class StudentEnrollmentController extends Controller
         'title'    => 'Online Enrollment',
         'periods'  => $periods,
         'subjects' => $subjectRepo->all(),
-        'courses'  => $courseRepo->all()
+        'courses'  => $courseRepo->allNoGe()
       ]);
     }
 

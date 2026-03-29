@@ -1,4 +1,28 @@
+<!-- Full Screen Loader Overlay -->
+ <style>
+    /* Prevent scrolling while loading */
+    body.loading {
+        overflow: hidden;
+    }
 
+    #pageLoader {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    #pageLoader.fade-out {
+        opacity: 0;
+        visibility: hidden;
+    }
+</style>
+<div id="pageLoader" class="position-fixed w-100 h-100 top-0 start-0 d-flex justify-content-center align-items-center bg-white" style="z-index: 9999; transition: opacity 0.3s ease;">
+    <div class="text-center">
+        <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted fw-bold">Loading Subjects...</p>
+    </div>
+</div>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h2>Subject Management</h2>
@@ -70,11 +94,11 @@
         <?php else: ?>
           <?php foreach($subjects as $subject): ?>
             <tr>
-              <td class="ps-3 fw-bold text-primary"><?= htmlspecialchars($subject->subject_code) ?></td>
+              <td class="ps-3 fw-bold text-success"><?= htmlspecialchars($subject->subject_code) ?></td>
               <td class="subject-title"><?= htmlspecialchars($subject->subject_title) ?></td>
               <td><?= htmlspecialchars($subject->units) ?></td>
               <td>
-                <span class="badge bg-info text-dark">
+                <span class="badge bg-success text-white">
                   <?= htmlspecialchars($subject->course->course_code ?? 'General') ?>
                 </span>
               </td>
@@ -221,6 +245,22 @@
 </div>
 
 <script>
+  document.body.classList.add('loading');
+
+    window.addEventListener('load', function() {
+        const loader = document.getElementById('pageLoader');
+        
+        // Add a slight delay so it doesn't "flicker" if the load is too fast
+        setTimeout(() => {
+            loader.classList.add('fade-out');
+            document.body.classList.remove('loading');
+            
+            // Remove from DOM after transition to keep the page light
+            setTimeout(() => {
+                loader.remove();
+            }, 300);
+        }, 500); 
+    });
   let editSubjectModal = null;
 
   function editSubject(subject) {
@@ -239,10 +279,17 @@
   }
 
   function confirmDelete(id) {
-    if (confirm('Are you sure you want to delete this subject? This cannot be undone if students are already enrolled.')) {
-      window.location.href = '/staff/subjects/delete/' + id;
+    if (confirm('Are you sure you want to delete this subject?')) {
+        // Show the loader again before redirecting
+        const loader = document.createElement('div');
+        loader.innerHTML = `<div class="position-fixed w-100 h-100 top-0 start-0 d-flex justify-content-center align-items-center bg-white" style="z-index: 9999;">
+            <div class="spinner-border text-danger"></div>
+        </div>`;
+        document.body.appendChild(loader);
+        
+        window.location.href = '/staff/subjects/delete/' + id;
     }
-  }
+}
 function filterSubjects() {
     const input = document.getElementById('subjectSearch');
     const filter = input.value.toLowerCase().trim();

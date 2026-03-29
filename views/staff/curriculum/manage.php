@@ -91,7 +91,25 @@
               <tr class="curriculum-row" 
                   data-year="<?= $s->pivot->year_level ?>" 
                   data-sem="<?= $s->pivot->semester ?>">
-                <td class="ps-4"><span class="badge bg-secondary"><?= $s->pivot->year_level ?></span></td>
+                <td class="ps-4">
+                  <?php 
+                    $year = $s->pivot->year_level;
+                    $badgeClass = 'bg-secondary';
+
+                    if (strpos($year, '1st') !== false) {
+                      $badgeClass = 'bg-success';
+                    } elseif (strpos($year, '2nd') !== false) {
+                      $badgeClass = 'bg-primary';
+                    } elseif (strpos($year, '3rd') !== false) {
+                      $badgeClass = 'bg-info';
+                    } elseif (strpos($year, '4th') !== false) {
+                      $badgeClass = 'bg-danger';
+                    }
+                  ?>
+                  <span class="badge <?= $badgeClass ?> shadow-sm text-uppercase">
+                    <?= htmlspecialchars($year) ?>
+                  </span>
+                </td>
                 <td class="fw-medium"><?= $s->pivot->semester ?></td>
                 <td>
                   <div class="fw-bold text-dark subject-code"><?= $s->subject_code ?></div>
