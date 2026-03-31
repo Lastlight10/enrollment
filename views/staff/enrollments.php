@@ -14,23 +14,64 @@
     </div>
   <?php endif; ?>
 <?php endforeach; ?>
-<div class="row mb-3">
-  <div class="col-md-4 ms-auto">
-    <div class="input-group shadow-sm">
-      <span class="input-group-text bg-white border-end-0">
-        <i class="bi bi-search text-muted"></i>
-      </span>
-      <input 
-        type="text" 
-        id="enrollmentSearch" 
-        class="form-control border-start-0 ps-0" 
-        maxlength="50"
-        placeholder="Search name or username..."
-        onkeyup="filterEnrollments()"
-      >
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="small fw-bold text-muted">SEARCH STUDENT</label>
+        <div class="input-group shadow-sm">
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+          <input type="text" id="enrollmentSearch" class="form-control border-start-0 ps-0" placeholder="Name, ID, or Username..." onkeyup="filterEnrollments()" maxlength="50">
+        </div>
+      </div>
+
+      <div class="col-md-2">
+        <label class="small fw-bold text-muted">COURSE</label>
+        <select id="filterCourse" class="form-select shadow-sm" onchange="filterEnrollments()">
+          <option value="">All Courses</option>
+          </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="small fw-bold text-muted">STATUS</label>
+        <select id="filterStatus" class="form-select shadow-sm" onchange="filterEnrollments()">
+          <option value="">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="enrolled">Enrolled</option>
+          <option value="rejected">Rejected</option>
+          <option value="dropped">Dropped</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="small fw-bold text-muted">YEAR LEVEL</label>
+        <select id="filterYear" class="form-select shadow-sm" onchange="filterEnrollments()">
+          <option value="">All Years</option>
+          <option value="1st Year">1st Year</option>
+          <option value="2nd Year">2nd Year</option>
+          <option value="3rd Year">3rd Year</option>
+          <option value="4th Year">4th Year</option>
+          <option value="5th Year">5th Year</option>
+          <option value="Irregular">Irregular</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="small fw-bold text-muted">ACADEMIC PERIOD</label>
+        <select id="filterPeriod" class="form-select shadow-sm" onchange="filterEnrollments()">
+          <option value="">All Periods</option>
+          </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="small fw-bold text-muted">DATE APPLIED</label>
+        <input type="date" id="filterDate" class="form-control shadow-sm" onchange="filterEnrollments()" min="1960-01-01">
+      </div>
     </div>
   </div>
 </div>
+
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -39,6 +80,7 @@
           <tr>
             <th class="ps-4">Student Details</th>
             <th>Applied Course</th>
+            <th>Academic Period</th>
             <th>Date Applied</th>
             <th>Status</th>
             <th class="text-center">Actions</th>
@@ -55,12 +97,34 @@
               ?>
               <tr>
                 <td class="ps-4 searchable-student">
-                  <div class="fw-bold text-dark"><?= $displayName ?></div>
-                  <small class="text-muted"><?= htmlspecialchars($e->user?->username ?? 'N/A') ?></small>
+                  <div class="d-flex align-items-center">                    
+                    <div>
+                      <div class="fw-bold text-dark mb-0" style="line-height: 1.2;">
+                        <?= $displayName ?>
+                      </div>
+                      
+                      <div class="d-flex flex-column flex-sm-row gap-sm-2 mt-1">
+                        <small class="text-muted d-flex align-items-center">
+                          <i class="bi bi-person-badge me-1"></i> 
+                          <?= htmlspecialchars($e->user?->id_number ?? 'No ID') ?>
+                        </small>
+                        <span class="text-muted d-none d-sm-inline">•</span>
+                        <small class="text-muted d-flex align-items-center">
+                          <i class="bi bi-at me-1"></i> 
+                          <?= htmlspecialchars($e->user?->username ?? 'N/A') ?>
+                        </small>
+                      </div>
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <div class="fw-bold text-primary"><?= htmlspecialchars($e->course?->course_code ?? 'N/A') ?></div>
                   <small class="badge bg-light text-dark border"><?= htmlspecialchars($e->grade_year) ?></small>
+                </td>
+                <td>
+                  <div class="small fw-bold"><?= htmlspecialchars($e->period?->acad_year ?? 'N/A') ?></div>
+                  <small class="text-muted"><?= htmlspecialchars($e->period?->semester ?? '') ?></small>
+                  <span class="d-none searchable-period"><?= htmlspecialchars(($e->period?->acad_year ?? '') . ' ' . ($e->period?->semester ?? '')) ?></span>
                 </td>
                 <td><?= date('M d, Y', strtotime($e->created_at)) ?></td>
                 <td>
@@ -286,4 +350,109 @@
       updateLiveTotal(); // Recalculate after removing a row
     }
   }
+  document.addEventListener('DOMContentLoaded', () => {
+    populateCourseFilter();
+});
+
+function populateFilters() {
+    const rows = document.querySelectorAll('#enrollmentTableBody tr:not(.no-results)');
+    const courses = new Set();
+    const periods = new Set(); // New Set for periods
+
+    rows.forEach(row => {
+        const courseCode = row.querySelector('td:nth-child(2) .fw-bold')?.innerText;
+        if (courseCode) courses.add(courseCode);
+
+        // Get text from our hidden searchable-period span
+        const periodText = row.querySelector('.searchable-period')?.innerText.trim();
+        if (periodText && periodText !== "N/A") periods.add(periodText);
+    });
+
+    // Populate Course Select
+    const courseSelect = document.getElementById('filterCourse');
+    courses.forEach(course => {
+        if (![...courseSelect.options].some(opt => opt.value === course)) {
+            const opt = document.createElement('option');
+            opt.value = course;
+            opt.innerHTML = course;
+            courseSelect.appendChild(opt);
+        }
+    });
+
+    // Populate Period Select
+    const periodSelect = document.getElementById('filterPeriod');
+    periods.forEach(period => {
+        if (![...periodSelect.options].some(opt => opt.value === period)) {
+            const opt = document.createElement('option');
+            opt.value = period;
+            opt.innerHTML = period;
+            periodSelect.appendChild(opt);
+        }
+    });
+}
+
+// Replace your old DOMContentLoaded listener with this
+document.addEventListener('DOMContentLoaded', () => {
+    populateFilters();
+    const modal = document.getElementById('enrollModal');
+    if (modal) modal.addEventListener('input', updateLiveTotal);
+});
+
+function filterEnrollments() {
+    const searchTerm = document.getElementById('enrollmentSearch').value.toLowerCase();
+    const filterCourse = document.getElementById('filterCourse').value;
+    const filterStatus = document.getElementById('filterStatus').value.toLowerCase();
+    const filterYear = document.getElementById('filterYear').value;
+    const filterDateInput = document.getElementById('filterDate').value;
+    const filterPeriod = document.getElementById('filterPeriod').value; // New Filter
+
+    const rows = document.querySelectorAll('#enrollmentTableBody tr:not(.no-results)');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const studentText = row.querySelector('.searchable-student').innerText.toLowerCase();
+        const courseCode = row.querySelector('td:nth-child(2) .fw-bold').innerText;
+        const yearLevel = row.querySelector('td:nth-child(2) .badge').innerText;
+        const status = row.querySelector('td:nth-child(5) .badge').innerText.toLowerCase(); // Adjusted index
+        const periodText = row.querySelector('.searchable-period').innerText;
+
+        // Date Logic
+        const rowDateRaw = row.querySelector('td:nth-child(4)').innerText.trim(); // Adjusted index
+        const dateObj = new Date(rowDateRaw);
+        const rowDateFormatted = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+
+        // Logic Checks
+        const matchesSearch = studentText.includes(searchTerm);
+        const matchesCourse = filterCourse === "" || courseCode === filterCourse;
+        const matchesStatus = filterStatus === "" || status === filterStatus;
+        const matchesYear = filterYear === "" || yearLevel === filterYear;
+        const matchesDate = filterDateInput === "" || rowDateFormatted === filterDateInput;
+        const matchesPeriod = filterPeriod === "" || periodText === filterPeriod; // New Logic Check
+
+        if (matchesSearch && matchesCourse && matchesStatus && matchesYear && matchesDate && matchesPeriod) {
+            row.style.display = "";
+            visibleCount++;
+        } else {
+            row.style.display = "none";
+        }
+    });
+
+    // ... Handle "No results found" logic remains the same ...
+
+
+    // Handle "No results found" display
+    let noResultsMsg = document.querySelector('.no-results');
+    if (visibleCount === 0) {
+        if (!noResultsMsg) {
+            const tbody = document.getElementById('enrollmentTableBody');
+            const tr = document.createElement('tr');
+            tr.className = 'no-results';
+            tr.innerHTML = `<td colspan="5" class="text-center py-5 text-muted">No applications match your filters.</td>`;
+            tbody.appendChild(tr);
+        }
+    } else if (noResultsMsg) {
+        noResultsMsg.remove();
+    }
+}
 </script>
+

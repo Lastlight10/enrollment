@@ -50,7 +50,7 @@
                     <div class="small text-muted"><?= htmlspecialchars($record->period->semester ?? '') ?></div>
                   </td>
                   <td>
-                    <div class="small fw-medium text-dark"><?= htmlspecialchars($record->course->course_name ?? 'N/A') ?></div>
+                    <div class="small fw-medium text-dark"><?= htmlspecialchars($record->course->course_code ?? 'N/A') ?></div>
                     <div class="text-muted small"><?= $record->grade_year ?></div>
                   </td>
                   <td>

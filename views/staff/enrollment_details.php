@@ -26,25 +26,29 @@
                 <p class="mb-1 text-muted small">FULL NAME</p>
                 <p class="fw-bold"><?= htmlspecialchars($e->user?->full_name ?? 'Unknown') ?></p>
                 
-                <p class="mb-1 text-muted small">USERNAME</p>
-                <p class="fw-bold"><?= htmlspecialchars($e->user?->username ?? 'N/A') ?></p>
-
                 <p class="mb-1 text-muted small">ID NUMBER</p>
                 <p class="fw-bold"><?= htmlspecialchars($e->id_number ?? 'N/A') ?></p>
 
                 <p class="mb-1 text-muted small">SCHOLARSHIP</p>
                 <?php 
                     $scholar = $e->scholar_type ?? 'non_scholar';
-                    $color = 'secondary';
-                    if($scholar == 'half-scholar') $color = 'primary';
-                    if($scholar == 'full-scholar') $color = 'success';
+                    $color = ($scholar == 'full-scholar') ? 'success' : (($scholar == 'half-scholar') ? 'primary' : 'secondary');
                 ?>
                 <p class="fw-bold text-<?= $color ?> text-uppercase"><?= ucwords(str_replace('_', ' ', $scholar)) ?></p>
                 
+                <hr class="opacity-25">
+
                 <h5 class="card-title fw-bold mb-3">Course Details</h5>
+                <p class="mb-1 text-muted small">ACADEMIC PERIOD</p>
+                <!-- Displays: 2025-2026 1st Semester -->
+                <p class="fw-bold text-dark">
+                    <?= htmlspecialchars($e->period?->acad_year ?? 'N/A') ?> 
+                    <span class="text-muted small"><?= htmlspecialchars($e->period?->semester ?? '') ?></span>
+                </p>
+
                 <p class="mb-1 text-muted small">APPLIED FOR</p>
-                <p class="text-primary fw-bold"><?= htmlspecialchars($e->course?->course_name ?? 'N/A') ?></p>
-                <span class="badge bg-light text-dark border">Year <?= $e->grade_year ?></span>
+                <p class="text-primary fw-bold mb-1"><?= htmlspecialchars($e->course?->course_name ?? 'N/A') ?></p>
+                <span class="badge bg-light text-dark border"><?= $e->grade_year ?></span>
             </div>
         </div>
 

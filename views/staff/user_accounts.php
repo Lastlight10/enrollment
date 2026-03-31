@@ -33,6 +33,24 @@
     <?php unset($_SESSION['info']); ?>
 <?php endif; ?>
 
+<div class="row mb-3">
+  <div class="col-md-4 ms-auto">
+    <div class="input-group shadow-sm">
+      <span class="input-group-text bg-white border-end-0">
+        <i class="bi bi-search text-muted"></i>
+      </span>
+      <input 
+        type="text" 
+        id="userSearch" 
+        class="form-control border-start-0 ps-0" 
+        placeholder="Search name, username, or email..."
+        onkeyup="filterUsers()"
+        maxlength="50"
+      >
+    </div>
+  </div>
+</div>
+
 <div class="card shadow-sm">
   <div class="card-body p-0">
     <table class="table table-hover mb-0">
@@ -48,7 +66,7 @@
       </thead>
       <tbody>
         <?php foreach($users as $user): ?>
-          <tr>
+          <tr class="user-row">
             <td class="ps-3"><?= htmlspecialchars($user->first_name . ' ' . $user->last_name) ?></td>
             <td><?= htmlspecialchars($user->username) ?></td>
             <td><?= htmlspecialchars($user->email) ?></td>
@@ -138,6 +156,7 @@
           <div class="col-md-6">
             <label class="form-label small fw-bold">Initial Status</label>
             <select name="status" class="form-select">
+              <option value="inactive" selected>Active</option>
               <option value="inactive" selected>Inactive</option>
             </select>
           </div>
@@ -231,6 +250,39 @@
   function confirmDelete(id) {
     if (confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
       window.location.href = '/staff/user_accounts/delete/' + id;
+    }
+  }
+  function filterUsers() {
+  const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+  const rows = document.querySelectorAll('.user-row');
+  let visibleCount = 0;
+
+  rows.forEach(row => {
+    // We target the first three <td> elements: Name, Username, and Email
+    const name = row.cells[0].textContent.toLowerCase();
+    const username = row.cells[1].textContent.toLowerCase();
+    const email = row.cells[2].textContent.toLowerCase();
+
+    if (name.includes(searchTerm) || username.includes(searchTerm) || email.includes(searchTerm)) {
+      row.style.display = "";
+      visibleCount++;
+    } else {
+      row.style.display = "none";
+    }
+  });
+
+  // Optional: Handle "No results" visual feedback
+  let noResultsRow = document.getElementById('noUserResults');
+    if (visibleCount === 0) {
+      if (!noResultsRow) {
+        const tbody = document.querySelector('tbody');
+        const tr = document.createElement('tr');
+        tr.id = 'noUserResults';
+        tr.innerHTML = `<td colspan="6" class="text-center py-4 text-muted">No accounts match your search.</td>`;
+        tbody.appendChild(tr);
+      }
+    } else if (noResultsRow) {
+      noResultsRow.remove();
     }
   }
   let editModalInstance = null;

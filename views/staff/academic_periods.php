@@ -92,9 +92,10 @@
           placeholder="e.g., 2025-2026"
           required
           maxlength="9"
-          pattern="[0-9]{4}-[0-9]{4}"
+          pattern="^[0-9]{4}(-[0-9]{4})?$"
           oninput="this.value = this.value.replace(/[^0-9-]/g, '');"
-          title="Please enter the format YYYY-YYYY (numbers and hyphen only)">
+          title="Please enter the format YYYY-YYYY or YYYY (numbers and hyphen only)">
+          <div class="form-text x-small text-muted">Supports "2025" or "2025-2026".</div>
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold">Semester</label>
@@ -131,9 +132,10 @@
           placeholder="e.g., 2025-2026"
           required
           maxlength="9"
-          pattern="[0-9]{4}-[0-9]{4}"
+          pattern="^[0-9]{4}(-[0-9]{4})?$"
           oninput="this.value = this.value.replace(/[^0-9-]/g, '');"
-          title="Please enter the format YYYY-YYYY (numbers and hyphen only)">
+          title="Please enter the format YYYY-YYYY or YYYY (numbers and hyphen only)">
+          <div class="form-text x-small text-muted">Supports "2025" or "2025-2026".</div>
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold">Semester</label>
