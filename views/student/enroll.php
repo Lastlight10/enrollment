@@ -548,16 +548,20 @@
     };
 
     document.getElementById('confirmSubmitBtn').addEventListener('click', function() {
-        const enrollmentForm = document.getElementById('enrollmentForm');
+    const enrollmentForm = document.getElementById('enrollmentForm');
+    const overlay = document.getElementById('loadingOverlay');
+    const loaderText = document.getElementById('loaderText'); // Use the ID
 
-        const overlay = document.getElementById('loadingOverlay');
-        overlay.querySelector('.mt-2').innerText = "Submitting Application...";
-        overlay.classList.remove('d-none');
+    if (loaderText) {
+        loaderText.innerText = "Submitting Application...";
+    }
+    
+    overlay.classList.remove('d-none');
 
-        this.disabled = true;
-        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
-        enrollmentForm.submit();
-    });
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+    enrollmentForm.submit();
+});
     function resetCourseFilter() {
     // 1. Clear the search input text
     const searchInput = document.getElementById('courseSearchInput');
