@@ -395,23 +395,42 @@
             addBtn.innerText = 'Added';
         }
         updateUI();
+        updateButtonStates();
     }
 
-    function updateButtonStates() {
-        const yearLevel = yearSelect.value;
-        const periodText = periodSelect.options[periodSelect.selectedIndex]?.text.toLowerCase() || "";
-        const isEligible = (yearLevel === "4th Year" || yearLevel === "5th Year" || periodText.includes("summer"));
+  function updateButtonStates() {
+      const yearLevel = yearSelect.value;
+      const periodText = periodSelect.options[periodSelect.selectedIndex]?.text.toLowerCase() || "";
+      const isEligible = (yearLevel === "4th Year" || yearLevel === "5th Year" || yearLevel === "Irregular" || periodText.includes("summer"));
 
-        document.querySelectorAll('.add-subject').forEach(btn => {
-            if (!isEligible) {
-                btn.classList.add('opacity-50');
-                btn.title = "Only available for 4th/5th Year or Summer";
-            } else {
-                btn.classList.remove('opacity-50');
-                btn.title = "";
-            }
-        });
-    }
+      // 1. Handle "Add" buttons in the available table
+      document.querySelectorAll('.add-subject').forEach(btn => {
+          if (!isEligible) {
+              btn.classList.add('opacity-50');
+              btn.style.pointerEvents = 'none'; // Prevents clicking
+              btn.title = "Only available for 4th/5th Year or Summer";
+          } else {
+              btn.classList.remove('opacity-50');
+              btn.style.pointerEvents = 'auto';
+              btn.title = "";
+          }
+      });
+
+      // 2. Handle "Remove" buttons in the chosen table
+      document.querySelectorAll('.remove-subject').forEach(btn => {
+          if (!isEligible) {
+              btn.disabled = true;           // Actually disables the button
+              btn.classList.add('opacity-50'); // Makes it look grayed out
+              btn.style.cursor = 'not-allowed';
+              btn.title = "Automatically loaded subjects cannot be removed by underclassmen.";
+          } else {
+              btn.disabled = false;
+              btn.classList.remove('opacity-50');
+              btn.style.cursor = 'pointer';
+              btn.title = "Remove subject";
+          }
+      });
+  }
 
     function clearChosenSubjects() {
         const rows = chosenBody.querySelectorAll('tr:not(#emptyPlaceholder)');
@@ -469,21 +488,36 @@
     });
 
     chosenBody.addEventListener('click', function(e) {
-        const btn = e.target.closest('.remove-subject');
-        if (btn) {
-            const id = btn.dataset.id;
-            const units = parseInt(btn.dataset.units);
-            document.getElementById(`chosen-${id}`).remove();
-            const addBtn = document.querySelector(`.add-subject[data-id="${id}"]`);
-            if (addBtn) {
-                addBtn.classList.remove('disabled');
-                addBtn.innerHTML = '<i class="bi bi-plus-lg"></i> Add';
-            }
-            selectedUnits -= units;
-            selectedCount--;
-            if (selectedCount === 0) emptyPlaceholder.style.display = 'table-row';
-            updateUI();
+      const btn = e.target.closest('.remove-subject');
+      if (btn) {
+        // --- ADDED ELIGIBILITY CHECK ---
+        const yearLevel = yearSelect.value;
+        const periodText = periodSelect.options[periodSelect.selectedIndex]?.text.toLowerCase() || "";
+        const isEligibleToEdit = (yearLevel === "4th Year" || yearLevel === "5th Year" || yearLevel === "Irregular");
+        const isSummer = periodText.includes("summer");
+
+        // If they are 1st-3rd year and it's a regular semester, block the delete action
+        if (!isEligibleToEdit && !isSummer) {
+          alert("Subjects cannot be removed. Only 4th Year, 5th Year, and Summer students can modify their subject list.");
+          return; // Exit the function so the code below doesn't run
         }
+        // --------------------------------
+
+        const id = btn.dataset.id;
+        const units = parseInt(btn.dataset.units);
+        document.getElementById(`chosen-${id}`).remove();
+        
+        const addBtn = document.querySelector(`.add-subject[data-id="${id}"]`);
+        if (addBtn) {
+          addBtn.classList.remove('disabled');
+          addBtn.innerHTML = '<i class="bi bi-plus-lg"></i> Add';
+        }
+        
+        selectedUnits -= units;
+        selectedCount--;
+        if (selectedCount === 0) emptyPlaceholder.style.display = 'table-row';
+        updateUI();
+      }
     });
 
     // Course Search logic

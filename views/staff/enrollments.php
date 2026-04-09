@@ -78,6 +78,7 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
+            <th class="ps-4">Payments</th>
             <th class="ps-4">Student Details</th>
             <th>Applied Course</th>
             <th>Academic Period</th>
@@ -90,12 +91,33 @@
           <?php if(empty($enrollments)): ?>
             <tr><td colspan="5" class="text-center py-5 text-muted">No applications found.</td></tr>
           <?php else: ?>
+
             <?php foreach($enrollments as $e): ?>
               <?php 
                 // Uses the Full Name attribute from your User model with null-safety
                 $displayName = htmlspecialchars($e->user?->full_name ?? 'Unknown Student'); 
+                $payments = $e->payments ?? [];
+                $paidCount = 0;
+                $pendingCount = 0;
+                
+                foreach($payments as $p) {
+                    if($p->status === 'paid') $paidCount++;
+                    if($p->status === 'unpaid' || $p->status === 'pending') $pendingCount++;
+                }
               ?>
               <tr>
+                <td class="ps-4">
+                  <div class="d-flex gap-2">
+                    <div class="text-center">
+                        <span class="badge bg-success d-block mb-1" title="Paid Payments"><?= $paidCount ?></span>
+                        <small class="x-small text-uppercase">Paid</small>
+                    </div>
+                    <div class="text-center">
+                        <span class="badge bg-warning text-dark d-block mb-1" title="Pending Payments"><?= $pendingCount ?></span>
+                        <small class="x-small text-uppercase">Pend</small>
+                    </div>
+                  </div>
+                </td>
                 <td class="ps-4 searchable-student">
                   <div class="d-flex align-items-center">                    
                     <div>
@@ -411,13 +433,13 @@ function filterEnrollments() {
 
     rows.forEach(row => {
         const studentText = row.querySelector('.searchable-student').innerText.toLowerCase();
-        const courseCode = row.querySelector('td:nth-child(2) .fw-bold').innerText;
-        const yearLevel = row.querySelector('td:nth-child(2) .badge').innerText;
-        const status = row.querySelector('td:nth-child(5) .badge').innerText.toLowerCase(); // Adjusted index
+        const courseCode = row.querySelector('td:nth-child(3) .fw-bold').innerText;
+        const yearLevel = row.querySelector('td:nth-child(3) .badge').innerText;
+        const status = row.querySelector('td:nth-child(6) .badge').innerText.toLowerCase(); // Adjusted index
         const periodText = row.querySelector('.searchable-period').innerText;
 
         // Date Logic
-        const rowDateRaw = row.querySelector('td:nth-child(4)').innerText.trim(); // Adjusted index
+        const rowDateRaw = row.querySelector('td:nth-child(5)').innerText.trim(); // Adjusted index
         const dateObj = new Date(rowDateRaw);
         const rowDateFormatted = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
 
