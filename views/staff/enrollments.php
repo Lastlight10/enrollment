@@ -382,7 +382,7 @@ function populateFilters() {
     const periods = new Set(); // New Set for periods
 
     rows.forEach(row => {
-        const courseCode = row.querySelector('td:nth-child(2) .fw-bold')?.innerText;
+        const courseCode = row.querySelector('td:nth-child(3) .fw-bold')?.innerText;
         if (courseCode) courses.add(courseCode);
 
         // Get text from our hidden searchable-period span
