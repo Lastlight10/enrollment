@@ -302,4 +302,72 @@ class UserRepository extends Repository
     $user = User::findOrFail($id);
     return $user->delete();
   }
+  public function sendPendingApprovalEmail($email)
+  {
+    $client = new \Google\Client();
+    $client->setAuthConfig(BASE_PATH . '/credentials.json');
+    $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
+
+    if ($client->isAccessTokenExpired()) {
+      $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+      file_put_contents(BASE_PATH . '/token.json', json_encode($client->getAccessToken()));
+    }
+
+    $service = new \Google\Service\Gmail($client);
+    
+    $body = "<html><body>
+                <h3>Staff Account Update Notice</h3>
+                <p>Your account information has been updated in Enrollment System.</p>
+            </body></html>";
+
+    $strRawMessage = "To: $email\r\n";
+    $strRawMessage .= "Subject: Account Information Updated\r\n";
+    $strRawMessage .= "MIME-Version: 1.0\r\n";
+    $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
+    $strRawMessage .= $body;
+
+    $mime = rtrim(strtr(base64_encode($strRawMessage), '+/', '-_'), '=');
+    $msg = new \Google\Service\Gmail\Message();
+    $msg->setRaw($mime);
+
+    try {
+      $service->users_messages->send("me", $msg);
+    } catch (\Exception $e) {
+      error_log("Gmail API Error: " . $e->getMessage());
+    }
+  }
+   public function sendRegisteredStaffEmail($email)
+  {
+    $client = new \Google\Client();
+    $client->setAuthConfig(BASE_PATH . '/credentials.json');
+    $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
+
+    if ($client->isAccessTokenExpired()) {
+      $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+      file_put_contents(BASE_PATH . '/token.json', json_encode($client->getAccessToken()));
+    }
+
+    $service = new \Google\Service\Gmail($client);
+    
+    $body = "<html><body>
+                <h3>Staff Account Registration Notice</h3>
+                <p>Your account information has been registered in Enrollment System.</p>
+            </body></html>";
+
+    $strRawMessage = "To: $email\r\n";
+    $strRawMessage .= "Subject: Account Information Updated\r\n";
+    $strRawMessage .= "MIME-Version: 1.0\r\n";
+    $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
+    $strRawMessage .= $body;
+
+    $mime = rtrim(strtr(base64_encode($strRawMessage), '+/', '-_'), '=');
+    $msg = new \Google\Service\Gmail\Message();
+    $msg->setRaw($mime);
+
+    try {
+      $service->users_messages->send("me", $msg);
+    } catch (\Exception $e) {
+      error_log("Gmail API Error: " . $e->getMessage());
+    }
+  }
 }

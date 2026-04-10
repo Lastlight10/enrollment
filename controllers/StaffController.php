@@ -93,7 +93,7 @@ class StaffController extends Controller
 
       $user = $this->userRepo->createAccount($data);
       if ($user) {
-        $this->userRepo->sendPendingApprovalEmail($user->email);
+        $this->userRepo->sendRegisteredStaffEmail($user->email);
         $_SESSION['success'] = "Staff account created! Verification email sent to {$user->email}.";
       }
     } catch (Exception $e) {
