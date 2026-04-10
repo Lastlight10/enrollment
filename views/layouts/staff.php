@@ -68,11 +68,13 @@
               Manage Curriculum
             </a>
           </li>
-          <li class="nav-item">
-            <a href="/staff/user_accounts" class="nav-link <?= ($title === 'Manage Accounts') ? 'active' : '' ?>">
-              Manage Users
-            </a>
-          </li>
+          <?php if ($_SESSION['user_type'] !== 'staff'): ?>
+            <li class="nav-item">
+              <a href="/staff/user_accounts" class="nav-link <?= ($title === 'Manage Accounts') ? 'active' : '' ?>">
+                Manage Users
+              </a>
+            </li>
+          <?php endif; ?>
         </ul>
         <div class="mt-5">
           <a href="/auth/logout" class="text-danger" onclick="return confirmLogout(event)">
