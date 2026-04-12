@@ -126,6 +126,15 @@
             <?php endif; ?>
 
             <?php if($p->status === 'unpaid'): ?>
+              <div class="d-grid gap-2 mb-3">
+                <button class="btn btn-outline-primary w-100 rounded-pill shadow-sm" 
+                        onclick="openQRModal('<?= $p->payment_type ?>', '<?= number_format($p->amount, 2) ?>', 'gcash')">
+                    <i class="bi bi-qr-code-scan me-1"></i> View GCASH QR
+                </button>
+
+
+              </div>
+            </button>
               <?php if($p->proof_path): ?>
                 <div class="text-center bg-white p-2 rounded border border-info">
                   <div class="text-info small mb-2">
@@ -201,7 +210,39 @@
     </div>
   </div>
 </div>
+<div class="modal fade" id="qrModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Scan to Pay</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center pb-4">
+                <p class="text-muted mb-3">Please scan the QR code below using your payment app.</p>
+                
+                <div class="bg-light p-4 rounded-4 mb-3 d-inline-block border">
+                    <img src="/static/images/payments/QR_CODE_GENERAL.jpg" 
+                         id="qr-image"
+                         alt="Payment QR" 
+                         class="img-fluid" 
+                         style="max-width: 250px;">
+                </div>
 
+                <div class="payment-details">
+                    <h6 class="text-muted small mb-1" id="qr-payment-type">PAYMENT</h6>
+                    <h3 class="fw-bold text-primary">₱<span id="qr-amount">0.00</span></h3>
+                </div>
+
+                <div class="alert alert-warning border-0 small mt-3">
+                    <i class="bi bi-info-circle-fill"></i> After paying, please take a screenshot and <strong>Upload the Receipt</strong> to confirm your enrollment.
+                </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-primary rounded-pill px-5" data-bs-dismiss="modal">I've Scanned It</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
 function openUploadModal(id, type) {
   // FIX: Dynamically set the form action to include the payment ID
@@ -218,7 +259,27 @@ function openUploadModal(id, type) {
   
   new bootstrap.Modal(document.getElementById('uploadModal')).show();
 }
+function openQRModal(type, amount, provider) {
+    document.getElementById('qr-payment-type').innerText = type.toUpperCase();
+    document.getElementById('qr-amount').innerText = amount;
+    
+    const qrImg = document.getElementById('qr-image');
+    const title = document.querySelector('#qrModal .modal-title');
 
+    if (provider === 'gcash') {
+        // Matches your provided path: static/images/gcashQR.jpg
+        qrImg.src = '/static/images/gcashQR.jpg'; 
+        title.innerText = 'Pay via GCash';
+    } else if (provider === 'maya') {
+        qrImg.src = '/static/images/payments/MAYA_QR.jpg'; 
+        title.innerText = 'Pay via Maya';
+    } else {
+        qrImg.src = '/static/images/payments/QR_CODE_GENERAL.jpg';
+        title.innerText = 'Scan to Pay';
+    }
+
+    new bootstrap.Modal(document.getElementById('qrModal')).show();
+}
 function previewFile() {
   const preview = document.getElementById('img-preview');
   const placeholder = document.getElementById('placeholder-content');

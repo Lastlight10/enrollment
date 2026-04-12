@@ -232,11 +232,12 @@ class StudentEnrollmentController extends Controller
               $_SESSION['error'] = "Record not found or access denied.";
               return $this->redirect('/student/dashboard');
           }
-
+          $projectRoot = realpath(__DIR__ . '/../');
           // 2. Setup Dompdf (ensure 'vendor/autoload.php' is loaded in your index.php)
           $options = new \Dompdf\Options();
           $options->set('isRemoteEnabled', true); // Critical for loading CSS/Images
           $options->set('defaultFont', 'DejaVu Sans');
+          $options->set('chroot', $projectRoot);
           
           $dompdf = new \Dompdf\Dompdf($options);
 

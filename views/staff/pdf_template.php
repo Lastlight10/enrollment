@@ -5,6 +5,7 @@
     <style>
         body { font-family: sans-serif; font-size: 5pt; color: #333; }
         .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        
         .section-title { background: #f4f4f4; padding: 5px; font-weight: bold; margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left;}
@@ -12,10 +13,19 @@
         .text-end { text-align: right; }
         .footer { margin-top: 50px; font-size: 9pt; text-align: center; color: #777; }
         .status-text { font-size: 9pt; font-weight: bold; text-transform: uppercase; }
+        .logo {
+            width: 80px; /* Adjust width as needed */
+            height: auto;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="header">
+        <img src="/static/images/UMLOGO.jpg" alt="UM Logo" class="logo">
+        <h4>The Universtity of Manila</h4>
+        <h4>546 Delos Santos St., 403, Manila, 1008 Metro Manila</h4>
+        <h4>Tel No.: 735-5256 | 735-5085</h4>
         <h2>OFFICIAL ENROLLMENT SUMMARY</h2>
         <h3 style="margin: 5px 0;"><?= strtoupper(htmlspecialchars($e->student_name ?? 'STUDENT RECORD')) ?></h3>
         

@@ -29,17 +29,21 @@
         <?php unset($_SESSION['info']); ?>
     <?php endif; ?>
 
-    <form action="/auth/reset-password" method="POST">
+    <form action="/auth/reset-password" method="POST" onsubmit="return validateForm()">
         <input type="hidden" name="email" value="<?= htmlspecialchars($_SESSION['reset_email'] ?? '') ?>">
 
         <div class="mb-3">
             <label class="form-label">New Password</label>
-            <input type="password" name="password" class="form-control form-control-lg" placeholder="Enter new password" required autofocus maxlength="30" oninput="this.value = this.value.replace(/\s+/g, '')">
+            <input type="password" name="password" class="form-control form-control-lg" placeholder="Enter new password" required autofocus maxlength="30"
+            oninput="validateLength(this, 'userHint')">
+            <small id="userHint" class="text-danger d-none">Must be 6-30 characters.</small>
         </div>
 
         <div class="mb-4">
             <label class="form-label">Confirm Password</label>
-            <input type="password" name="confirm_password" class="form-control form-control-lg" placeholder="Confirm new password" required maxlength="30" oninput="this.value = this.value.replace(/\s+/g, '')">
+            <input type="password" name="confirm_password" class="form-control form-control-lg" placeholder="Confirm new password" required maxlength="30"
+            oninput="validateLength(this, 'passHint')">
+            <small id="passHint" class="text-danger d-none">Must be 6-30 characters.</small>
         </div>
 
         <div class="d-grid">
@@ -47,3 +51,40 @@
         </div>
     </form>
 </div>
+
+<script>
+    function validateForm() {
+        const new_password = document.getElementsByName('password')[0];
+        const confirm_password = document.getElementsByName('confirm_password')[0];
+      
+      
+      // Check lengths one last time
+      const isNewPassValid = new_password.value.length >= 6 && new_password.value.length <= 30;
+      const isConfirmPassValid = confirm_password.value.length >= 6 && confirm_password.value.length <= 30;
+
+      if (!isNewPassValid || !isConfirmPassValid) {
+        // Manually trigger the hints if they tried to submit too early
+        validateLength(new_password, 'userHint');
+        validateLength(confirm_password, 'passHint');
+        
+        alert("Please ensure the Password is between 6 and 30 characters.");
+        return false; // This stops the form from submitting
+      }
+
+      return true; // This allows the form to submit
+  }
+
+  function validateLength(input, hintId) {
+    input.value = input.value.replace(/\s+/g, '');
+    const hint = document.getElementById(hintId);
+    const len = input.value.length;
+
+    if (len > 0 && (len < 6 || len > 30)) {
+      hint.classList.remove('d-none');
+      input.classList.add('is-invalid');
+    } else {
+      hint.classList.add('d-none');
+      input.classList.remove('is-invalid');
+    }
+  }
+</script>

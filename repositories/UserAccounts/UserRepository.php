@@ -71,7 +71,6 @@ class UserRepository extends Repository
 
     if ($user) {
       return $user->update([
-        'status' => 'active',
         'otp_code' => null,
         'otp_expires_at' => null
       ]);

@@ -119,11 +119,13 @@ class StaffEnrollmentController extends Controller {
             $_SESSION['error'] = "Enrollment record not found.";
             return $this->redirect('/staff/enrollments');
         }
-
+        $projectRoot = realpath(__DIR__ . '/../');
         // 2. Setup Dompdf
         $options = new \Dompdf\Options();
         $options->set('isRemoteEnabled', true);
         $options->set('defaultFont', 'DejaVu Sans');
+        $options->set('chroot', $projectRoot);
+        
         $dompdf = new \Dompdf\Dompdf($options);
 
         // 3. Prepare data for the template

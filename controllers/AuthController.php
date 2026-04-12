@@ -227,8 +227,19 @@ class AuthController extends Controller
 
     $user = User::where('email', $email)->first();
     if ($user) {
-      $user->update(['password' => $newPassword]);
-      Logger::log("PASSWORD RESET SUCCESS: User {$user->username}");
+      Logger::log("PASSWORD RESET User Status:{$user->status}");
+      if ($user->status === 'active'){
+        $user->update([
+        'password' => $newPassword]);
+      }
+      else {
+        $user->update([
+        'password' => $newPassword,
+        'status' => 'inactive',
+        ]);
+      }
+      
+      
       $_SESSION['success'] = "Password successfully updated. Please login.";
       unset($_SESSION['reset_email'], $_SESSION['verify_email']);
       $this->redirect('/auth/login');

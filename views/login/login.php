@@ -32,7 +32,8 @@
       <label for="username" class="form-label">Username</label>
       <input type="text" name="username" id="username" class="form-control" 
       oninput="this.value = this.value.replace(/\s+/g, '')"
-      placeholder="Enter your username" required autofocus maxlength="30">
+      placeholder="Enter your username" required autofocus minlength="6" maxlength="30"
+      title="Username must have 6-30 characters.">
     </div>
 
     <div class="mb-3">
@@ -40,7 +41,8 @@
       <div class="input-group">
         <input type="password" name="password" id="password" class="form-control" 
         oninput="this.value = this.value.replace(/\s+/g, '')"
-        placeholder="Enter your password" required maxlength="30">
+        placeholder="Enter your password" required maxlength="30"
+         title="Password must have 6-30 characters.">
         <button class="btn btn-outline-secondary" type="button" id="togglePassword">
           <i class="bi bi-eye"></i> Show
         </button>
