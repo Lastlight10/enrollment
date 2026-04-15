@@ -2,6 +2,7 @@
 namespace Controllers;
 
 use App\Core\Controller;
+use App\Core\Logger;
 use App\Core\Request;
 use Models\Enrollment;
 use Exception;
@@ -56,7 +57,20 @@ class StaffEnrollmentController extends Controller {
       'fees.*.amount' => 'required|numeric|min:0'
     ]);
 
-    $this->enrollmentRepo->approveWithFees($id, $validated['fees']);
+    $enrollment = $this->enrollmentRepo->approveWithFees($id, $validated['fees']);
+
+    if ($enrollment) {
+      $downpaymentAmount = 0;
+      foreach ($validated['fees'] as $fee) {
+        if ($fee['type'] === 'downpayment') {
+          $downpaymentAmount = $fee['amount'];
+          break;
+        }
+      }
+
+        $this->enrollmentRepo->sendApprovalEmail($enrollment, $downpaymentAmount);
+    }
+
     $_SESSION['success'] = "Enrollment Approved and fees generated.";
     return $this->redirect('/staff/enrollments');
   }
@@ -81,6 +95,29 @@ class StaffEnrollmentController extends Controller {
     $_SESSION['success'] = "Enrollment has been dropped.";
     return $this->redirect('/staff/enrollments');
   }
+
+  public function announceEmail(Request $request) {
+    try {
+      $ids = $request->input('enrollment_ids');
+      $type = $request->input('payment_type');
+      $start = $request->input('startDate');
+      $end = $request->input('endDate');
+
+      if (empty($ids)) {
+        $_SESSION['error'] = "No enrolled students.";
+        throw new Exception("No students selected for announcement.");
+          
+      }
+
+      $count = $this->enrollmentRepo->sendBulkAnnouncement($ids, $type, $start, $end);
+
+      $_SESSION['success'] = "Successfully sent announcement to $count students.";
+    } catch (Exception $e) {
+      $_SESSION['error'] = $e->getMessage();
+    }
+    return $this->redirect('/staff/enrollments');
+  }
+
   public function verifyPayment(Request $request, $id)
   {
     try {

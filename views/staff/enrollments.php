@@ -15,6 +15,10 @@
   <?php endif; ?>
 <?php endforeach; ?>
 
+<button type="button" class="btn btn-danger shadow-sm mb-3" onclick="openBulkAnnounceModal()">
+    <i class="bi bi-megaphone-fill me-2"></i> Announce to All Enrolled Students
+</button>
+
 <div class="card border-0 shadow-sm mb-4">
   <div class="card-body">
     <div class="row g-3">
@@ -185,6 +189,48 @@
   </div>
 </div>
 
+<div class="modal fade" id="bulkAnnounceModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <form id="bulkAnnounceForm" method="POST" action="/staff/enrollments/announce" class="modal-content border-0 shadow">
+      <div class="modal-header bg-danger text-white border-0">
+        <h5 class="modal-title fw-bold">Global Payment Announcement</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        
+        <div id="idContainer"></div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">SELECT PERIOD</label>
+          <select name="payment_type" class="form-select" required>
+            
+            <option value="prelim">Prelim</option>
+            <option value="midterm">Midterm</option>
+            <option value="finals">Finals</option>
+          </select>
+        </div>
+        <div class="row">
+          <div class="col-6">
+            <label class="small fw-bold">START DATE</label>
+            <input type="date" id="announceStartDate" name="startDate" class="form-control" required onchange="validateDates()">
+          </div>
+          <div class="col-6">
+            <label class="small fw-bold">END DATE</label>
+            <input type="date" id="announceEndDate" name="endDate" class="form-control" required onchange="validateDates()">
+          </div>
+        </div>
+        <div id="dateErrorMessage" class="text-danger x-small mt-2" style="display:none;">
+            * Dates must be in the future and End Date must be after Start Date.
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger rounded-pill px-4">Send to Emails</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="modal fade" id="rejectModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <form id="rejectForm" method="POST" class="modal-content border-0 shadow">
@@ -284,6 +330,7 @@
   let feeIndex = 1;
   let enrollModalInstance = null;
   let rejectModalInstance = null;
+  let announceModalInstance = null;
 
   // 1. Live Total Calculation Logic
   function updateLiveTotal() {
@@ -306,7 +353,80 @@
     if (modal) {
       modal.addEventListener('input', updateLiveTotal);
     }
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const minDateString = tomorrow.toISOString().split('T')[0];
+    
+    const startInput = document.getElementById('announceStartDate');
+    const endInput = document.getElementById('announceEndDate');
+    
+    if(startInput && endInput) {
+        startInput.min = minDateString;
+        endInput.min = minDateString;
+    }
   });
+
+  function validateDates() {
+      const startInput = document.getElementById('announceStartDate');
+      const endInput = document.getElementById('announceEndDate');
+      const errorMsg = document.getElementById('dateErrorMessage');
+      const submitBtn = document.querySelector('#bulkAnnounceForm button[type="submit"]');
+
+      const startDate = startInput.value;
+      const endDate = endInput.value;
+
+      let isValid = true;
+
+      // 1. Check if dates are empty
+      if (!startDate || !endDate) {
+          isValid = false;
+      } 
+      // 2. Check if Start Date is equal to or after End Date
+      else if (startDate >= endDate) {
+          isValid = false;
+          errorMsg.innerText = "* End Date must be strictly AFTER Start Date.";
+          errorMsg.style.display = "block";
+      } else {
+          errorMsg.style.display = "none";
+      }
+
+      // Disable button if invalid
+      submitBtn.disabled = !isValid;
+  }
+
+  function openBulkAnnounceModal() {
+    const idContainer = document.getElementById('idContainer');
+    idContainer.innerHTML = ''; // Clear previous
+    
+    // Find all rows that are NOT hidden by your filterEnrollments() function
+    const visibleRows = document.querySelectorAll('#enrollmentTableBody tr:not([style*="display: none"]):not(.no-results)');
+    
+    if (visibleRows.length === 0) {
+      alert("No students found in the current list.");
+      return;
+    }
+
+    visibleRows.forEach(row => {
+      // Extract ID from the 'View' link or a data attribute
+      const viewLink = row.querySelector('a[href*="/details/"]');
+      const id = viewLink.getAttribute('href').split('/').pop();
+      
+      // Add hidden input for each student
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'enrollment_ids[]';
+      input.value = id;
+      idContainer.appendChild(input);
+    });
+
+    document.getElementById('bulkAnnounceForm').reset();
+    document.getElementById('dateErrorMessage').style.display = "none";
+    document.querySelector('#bulkAnnounceForm button[type="submit"]').disabled = true;
+    const modal = new bootstrap.Modal(document.getElementById('bulkAnnounceModal'));
+    modal.show();
+  }
 
   function openEnrollModal(id, name) {
     const form = document.getElementById('enrollForm');
@@ -336,11 +456,10 @@
     div.innerHTML = `
       <div class="col-7">
         <select name="fees[${feeIndex}][type]" class="form-select border-0 shadow-sm" required>
-          <option value="downpayment">Downpayment</option>
-          <option value="prelim">Prelim</option>
+
+        <option value="prelim">Prelim</option>
           <option value="midterm">Midterm</option>
           <option value="finals">Finals</option>
-          <option value="others">Others</option>
         </select>
       </div>
       <div class="col-4">
@@ -372,9 +491,7 @@
       updateLiveTotal(); // Recalculate after removing a row
     }
   }
-  document.addEventListener('DOMContentLoaded', () => {
-    populateCourseFilter();
-});
+
 
 function populateFilters() {
     const rows = document.querySelectorAll('#enrollmentTableBody tr:not(.no-results)');
@@ -412,13 +529,6 @@ function populateFilters() {
         }
     });
 }
-
-// Replace your old DOMContentLoaded listener with this
-document.addEventListener('DOMContentLoaded', () => {
-    populateFilters();
-    const modal = document.getElementById('enrollModal');
-    if (modal) modal.addEventListener('input', updateLiveTotal);
-});
 
 function filterEnrollments() {
     const searchTerm = document.getElementById('enrollmentSearch').value.toLowerCase();

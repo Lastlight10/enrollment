@@ -13,6 +13,8 @@
     </div>
   </div>
 
+  
+
   <div class="row align-items-center mb-4">
     <div class="col-md-8">
       <h2 class="fw-bold text-dark">Welcome, <?= htmlspecialchars($_SESSION['user_name'] ?? 'Student') ?>!</h2>
@@ -22,6 +24,18 @@
       <a href="/student/enroll" class="btn btn-custom-green btn-sm px-3 shadow-sm d-block d-md-inline-block">
         <i class="bi bi-plus-lg me-1"></i> New Enrollment
       </a>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <h4 class="fw-bold">How To Enroll?</h4>
+      <ol class="text-muted ps-3">
+        <li>Go to <strong>Enroll Now</strong>.</li>
+        <li>Choose Academic Period, Course, Year Level, and Scholarship.</li>
+        <li>Confirm Enrollment to Proceed.</li>
+        <li>Wait for an email of approval from the staff.</li>
+      </ol>
     </div>
   </div>
 

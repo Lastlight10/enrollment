@@ -18,38 +18,100 @@ class StudentController extends Controller {
       $this->redirect('/auth/login');
     }
   }
+  public function profile() {
+    $userId = $_SESSION['user_id'];
+    
+    // Using your existing User model to find the logged-in student
+    $user = User::find($userId);
 
-  public function dashboard() {
-  $userId = $_SESSION['user_id'];
-  $user = User::find($userId);
+    if (!$user) {
+      $_SESSION['error'] = "User not found.";
+      return $this->redirect('/student/dashboard');
+    }
 
-  // 1. Get Enrollment History (for the table)
-  $enrollmentRepo = new \App\Repositories\StudentRepositories\EnrollmentRepository();
-  $history = $enrollmentRepo->getStudentHistory($userId);
-
-  // 2. Check current enrollment status for the progress bar
-  // We'll assume the latest enrollment represents the current status
-  $currentEnrollment = $history->first(); 
-  $is_paid = false;
-  if ($currentEnrollment) {
-    // Check if there are any verified payments for this enrollment
-    $is_paid = $currentEnrollment->payments()->where('status', 'verified')->exists();
+    // This renders the profile.php template within your layout
+    $this->studentView('student/profile', [
+      'title' => 'My Profile',
+      'user'  => $user
+    ]);
   }
 
-  // 3. Get data for the Modal dropdowns
-  $periodRepo = new \App\Repositories\StaffRepositories\AcademicPeriodRepository();
-  $courseRepo = new \App\Repositories\StaffRepositories\CourseRepository();
-  $subjectRepo = new \App\Repositories\StaffRepositories\SubjectRepository();
+  public function dashboard() {
+    $userId = $_SESSION['user_id'];
+    $user = User::find($userId);
 
-  $this->studentView('student/dashboard', [
-    'title'     => 'Student Dashboard',
-    'user_name' => $user->username,
-    'status'    => $user->status,
-    'history'   => $history,
-    'is_paid'   => $is_paid,
-    'periods'   => $periodRepo->all(),
-    'courses'   => $courseRepo->all(),
-    'subjects'  => $subjectRepo->all()
-  ]);
-}
+    // 1. Get Enrollment History (for the table)
+    $enrollmentRepo = new \App\Repositories\StudentRepositories\EnrollmentRepository();
+    $history = $enrollmentRepo->getStudentHistory($userId);
+
+    // 2. Check current enrollment status for the progress bar
+    // We'll assume the latest enrollment represents the current status
+    $currentEnrollment = $history->first(); 
+    $is_paid = false;
+    if ($currentEnrollment) {
+      // Check if there are any verified payments for this enrollment
+      $is_paid = $currentEnrollment->payments()->where('status', 'verified')->exists();
+    }
+
+    // 3. Get data for the Modal dropdowns
+    $periodRepo = new \App\Repositories\StaffRepositories\AcademicPeriodRepository();
+    $courseRepo = new \App\Repositories\StaffRepositories\CourseRepository();
+    $subjectRepo = new \App\Repositories\StaffRepositories\SubjectRepository();
+
+    $this->studentView('student/dashboard', [
+      'title'     => 'Student Dashboard',
+      'user_name' => $user->username,
+      'status'    => $user->status,
+      'history'   => $history,
+      'is_paid'   => $is_paid,
+      'periods'   => $periodRepo->all(),
+      'courses'   => $courseRepo->all(),
+      'subjects'  => $subjectRepo->all()
+    ]);
+  }
+  public function updateProfile() {
+    $userId = $_SESSION['user_id'];
+    $userRepo = new \App\Repositories\UserAccounts\UserRepository();
+
+    // 1. Gather input from POST
+    $data = [
+      'first_name' => $_POST['first_name'],
+      'mid_name'   => $_POST['mid_name'],
+      'last_name'  => $_POST['last_name'],
+      'email'      => $_POST['email'],
+      'birth_date' => $_POST['birth_date'],
+      'username'   => $_POST['username'],
+    ];
+
+    // 2. Logic: Handle Password Change
+    if (!empty($_POST['password'])) {
+      if ($_POST['password'] !== $_POST['password_confirmation']) {
+        $_SESSION['error'] = "Passwords do not match.";
+        return $this->redirect('/student/profile');
+      }
+      // Hash the password before saving
+      $data['password'] = $_POST['password'];
+    }
+
+    // 3. Security: Check for duplicate email
+    $existingUser = $userRepo->findByEmail($data['email']);
+    if ($existingUser && $existingUser->id != $userId) {
+      $_SESSION['error'] = "That email is already in use by another account.";
+      return $this->redirect('/student/profile');
+    }
+
+    // 4. Update via Repository
+    $result = $userRepo->update($userId, $data);
+
+    if ($result === 'no_changes') {
+      $_SESSION['info'] = "No changes were made to your profile.";
+    } elseif ($result) {
+      $_SESSION['success'] = "Profile updated successfully!";
+    } else {
+      $_SESSION['error'] = "Failed to update profile. Please try again.";
+    }
+
+    $this->redirect('/student/profile');
+  }
+
 }

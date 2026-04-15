@@ -38,10 +38,17 @@ class UserRepository extends Repository
   public function update($id, array $data)
   {
     $user = User::find($id);
-    if ($user) {
-      return $user->update($data);
+    if (!$user) return false;
+
+    // Fill the model with new data
+    $user->fill($data);
+
+    // Check if any actual values changed compared to the database
+    if (!$user->isDirty()) {
+        return 'no_changes';
     }
-    return false;
+
+    return $user->save();
   }
 
   public function exists($column, $value)
@@ -369,4 +376,5 @@ class UserRepository extends Repository
       error_log("Gmail API Error: " . $e->getMessage());
     }
   }
+
 }

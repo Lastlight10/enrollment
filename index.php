@@ -79,6 +79,7 @@ $router->group('/staff', function($router) {
  $router->group('/enrollments', function($router) {
     $router->get('', 'Controllers\StaffEnrollmentController@enrollments');
     
+    $router->post('/announce', 'Controllers\StaffEnrollmentController@announceEmail');
     // New: Route to view specific enrollment details
     $router->get('/details/{id}', 'Controllers\StaffEnrollmentController@details');
     
@@ -116,10 +117,14 @@ $router->group('/student', function($router) {
   $router->get('/enroll', 'Controllers\StudentEnrollmentController@showForm');
   
   $router->get('/enrollments', 'Controllers\StudentEnrollmentController@index');
+  
   $router->get('/enrollment/details/{id}', 'Controllers\StudentEnrollmentController@viewDetails');
   $router->get('/enrollment/pdf/{id}', 'Controllers\StudentEnrollmentController@downloadPdf');
 
   $router->post('/payment/upload/{id}', 'Controllers\StudentEnrollmentController@uploadProof');
+
+  $router->get('/profile', 'Controllers\StudentController@profile');
+  $router->post('/profile/update', 'Controllers\StudentController@updateProfile');
 
   // Other Student Actions
   $router->get('/status', 'Controllers\StudentController@status');

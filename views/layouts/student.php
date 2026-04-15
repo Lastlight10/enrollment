@@ -39,6 +39,7 @@
           <li class="nav-item"><a class="nav-link" href="/student/enroll">Enroll Now</a></li>
           <li class="nav-item"><a class="nav-link" href="/student/enrollments">My Enrollments</a></li>
           <li class="nav-item"><a class="nav-link" href="/student/curriculum">Curriculum</a></li>
+          <li class="nav-item"><a class="nav-link" href="/student/profile">Profile</a></li>
           <li class="nav-item ms-lg-3">
             <a href="/auth/logout" class="btn btn-sm btn-outline-light border-0" onclick="return confirmLogout(event)">
               <i class="bi bi-box-arrow-right"></i> Logout

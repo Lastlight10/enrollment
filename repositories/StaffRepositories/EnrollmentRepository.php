@@ -2,10 +2,13 @@
 namespace App\Repositories\StaffRepositories;
 
 use App\Core\Repository;
+use App\Core\Logger;
 use Models\Enrollment;
 use Models\Curriculum;
 
 use Illuminate\Support\Facades\DB;
+use Models\AcademicPeriod;
+use App\Repositories\StaffRepositories\AcademicPeriodRepository;
 
 class EnrollmentRepository extends Repository{
   public function findById($id) {
@@ -79,14 +82,14 @@ class EnrollmentRepository extends Repository{
     });
   }
   public function updatePaymentStatus($paymentId, $data)
-{
-    return DB::table('payments')->where('id', $paymentId)->update([
-        'status' => $data['status'],
-        'remarks' => $data['remarks'],
-        'verified_by' => $data['verified_by'],
-    ]);
-}
-public function findForStudent($userId, $enrollmentId)
+  {
+      return DB::table('payments')->where('id', $paymentId)->update([
+          'status' => $data['status'],
+          'remarks' => $data['remarks'],
+          'verified_by' => $data['verified_by'],
+      ]);
+  }
+  public function findForStudent($userId, $enrollmentId)
   {
     // Changed 'users' to 'user' assuming a standard BelongsTo relationship
     return Enrollment::with(['course', 'subjects', 'payments', 'user']) 
@@ -94,6 +97,168 @@ public function findForStudent($userId, $enrollmentId)
       ->where('id', $enrollmentId)
       ->first();
   }
-  
+   // Inside EnrollmentRepository.php
+
+  // Inside EnrollmentRepository.php
+
+  public function sendBulkAnnouncement($enrollmentIds, $type, $startDate, $endDate)
+  {
+
+    // 1. Get unique users from the provided enrollment IDs
+    $enrollments = Enrollment::with('user')
+        ->whereIn('id', $enrollmentIds)
+        ->get()
+        ->unique('user_id');
+
+    // 2. Fix the Period Access
+    $acad = new AcademicPeriodRepository();
+    $periods = $acad->getActivePeriods();
+    $active = is_array($periods) ? (object)$periods[0] : $periods->first();
+
+    if (!$active) {
+        throw new \Exception("No active academic period found.");
+    }
+
+    // 3. Gmail Client Setup (Consider moving this to a Constructor/Service to stay DRY)
+    $client = new \Google\Client();
+    $client->setAuthConfig(BASE_PATH . '/credentials.json');
+    $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
+
+    if ($client->isAccessTokenExpired()) {
+        $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+        file_put_contents(BASE_PATH . '/token.json', json_encode($client->getAccessToken()));
+    }
+    $successCount=0;
+    $service = new \Google\Service\Gmail($client);
+    $formattedStart = date('M d, Y', strtotime($startDate));
+    $formattedEnd = date('M d, Y', strtotime($endDate));
+    $subject = "IMPORTANT: " . strtoupper($type) . " Payment Schedule";
+    $baseUrl = 'http://enrollment.great-site.net';
+    $logoPath = $baseUrl . '/static/images/UMLOGO.jpg';
+
+    foreach ($enrollments as $enrollment) {
+        $user = $enrollment->user;
+        if (!$user?->email) continue;
+
+        // HTML Design Template
+        $messageBody = "
+        <html>
+        <body style='font-family: sans-serif; color: #333; line-height: 1.6;'>
+            <div style='max-width: 600px; margin: 0 auto; border: 1px solid #e1e1e1; border-radius: 8px; overflow: hidden;'>
+                <div style='background-color: white; padding: 20px; text-align: center;'>
+                  <img src='{$logoPath}' alt='University Logo' style='width: 80px; height: auto; margin-bottom: 10px;'>
+                    <h4 style='color: #004d00; margin: 0; font-size: 24px; letter-spacing: 1px;'>The University of Manila</h1>
+                    <h1 style='color: #004d00; margin: 0; font-size: 20px;'>Payment Announcement</h1>
+                </div>
+
+                <div style='padding: 30px;'>
+                    <p>Dear <strong>{$user->full_name}</strong>,</p>
+                    <p>This is a formal notice regarding the <strong>" . strtoupper($type) . "</strong> payment schedule for the <strong>{$active->acad_year} {$active->semester}</strong> period.</p>
+                    
+                    <div style='background-color: #f8f9fa; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0;'>
+                        <p style='margin: 0;'><strong>Period:</strong> " . strtoupper($type) . "</p>
+                        <p style='margin: 0;'><strong>Start Date:</strong> {$formattedStart}</p>
+                        <p style='margin: 0;'><strong>End Date:</strong> {$formattedEnd}</p>
+                    </div>
+
+                    <p>Please settle your balance through our authorized payment channels before the deadline to avoid any inconvenience.</p>
+                    
+                </div>
+                <div style='background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
+                    This is an automated notification. Please do not reply to this email.<br>
+                    &copy; " . date('Y') . " The University of Manila
+                </div>
+            </div>
+        </body>
+        </html>";
+
+        // IMPORTANT: Change Content-Type to text/html
+        $strRawMessage = "From: Your School Name <your-email@gmail.com>\r\n";
+        $strRawMessage .= "To: {$user->email}\r\n";
+        $strRawMessage .= "Subject: =?utf-8?B?" . base64_encode($subject) . "?=\r\n"; // Encoded subject for special chars
+        $strRawMessage .= "MIME-Version: 1.0\r\n";
+        $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
+        $strRawMessage .= $messageBody;
+
+        $mime = rtrim(strtr(base64_encode($strRawMessage), '+/', '-_'), '=');
+        $msg = new \Google\Service\Gmail\Message();
+        $msg->setRaw($mime);
+
+        try {
+            $service->users_messages->send("me", $msg);
+            $successCount++;
+        } catch (\Exception $e) {
+            Logger::log("Gmail Error for {$user->email}: " . $e->getMessage());
+        }
+    }
+    return $successCount;
+  }
+  public function sendApprovalEmail($enrollment, $amount) {
+    $user = $enrollment->user;
+    if (!$user?->email) return;
+    $formattedAmount = number_format($amount, 2);
+
+    // Find the downpayment amount from the generated fees
+    $downpayment = collect($enrollment->payments)
+        ->where('type', 'downpayment')
+        ->first();
+    
+    $amount = $downpayment ? number_format($downpayment->amount, 2) : '0.00';
+
+    $client = new \Google\Client();
+    $client->setAuthConfig(BASE_PATH . '/credentials.json');
+    $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
+    
+    $service = new \Google\Service\Gmail($client);
+
+    $subject = "Welcome! Your Enrollment is Approved";
+    $baseUrl = 'http://enrollment.great-site.net';
+    $logoPath = $baseUrl . '/static/images/UMLOGO.jpg';
+    $messageBody = "
+    <html>
+    <body style='font-family: sans-serif; color: #333;'>
+        <div style='max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;'>
+
+            <div style='background-color: white; padding: 30px 20px; text-align: center;'>
+              <img src='{$logoPath}' alt='University Logo' style='width: 80px; height: auto; margin-bottom: 10px;'>
+              <h4 style='color: #004d00; margin: 0; font-size: 24px; letter-spacing: 1px;'>The University of Manila</h1>
+              <h1 style='color: #004d00; margin: 0; font-size: 24px; letter-spacing: 1px;'>Admission Confirmed</h1>
+            </div>
+
+            <div style='padding: 30px;'>
+                <p>Hello <strong>{$user->full_name}</strong>,</p>
+                <p>Congratulations! Your enrollment for <strong>{$enrollment->period->acad_year} {$enrollment->period->semester}</strong> has been approved.</p>
+                
+                <p>To finalize your registration, please settle your downpayment:</p>
+                
+                <div style='background-color: #f8f9fa; border-radius: 5px; padding: 20px; text-align: center; margin: 20px 0;'>
+                    <span style='color: #6c757d; font-size: 14px;'>REQUIRED DOWNPAYMENT</span><br>
+                    <span style='font-size: 32px; font-weight: bold; color: #28a745;'>₱{$formattedAmount}</span>
+                </div>
+            </div>
+            <div style='background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
+                This is an automated notification. Please do not reply to this email.<br>
+                &copy; " . date('Y') . " The University of Manila
+            </div>
+        </div>
+    </body>
+    </html>";
+
+    $strRawMessage = "To: {$user->email}\r\n";
+    $strRawMessage .= "Subject: {$subject}\r\n";
+    $strRawMessage .= "MIME-Version: 1.0\r\n";
+    $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
+    $strRawMessage .= $messageBody;
+
+    $mime = rtrim(strtr(base64_encode($strRawMessage), '+/', '-_'), '=');
+    $msg = new \Google\Service\Gmail\Message();
+    $msg->setRaw($mime);
+
+    try {
+        $service->users_messages->send("me", $msg);
+    } catch (\Exception $e) {
+        Logger::log("Failed to send approval email to {$user->email}: " . $e->getMessage());
+    }
+}
 }
 ?>

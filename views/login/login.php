@@ -54,7 +54,7 @@
     </div>
 
     <div class="text-center mt-4">
-      <p class="mb-0">Did you <a href="/auth/forgotpass" class="text-decoration-none">forgot your Password?</a></p>
+      <p class="mb-0">Did you <a href="/auth/forgotpass" class="text-decoration-none">Forgot your Password?</a></p>
     </div>
 
     <div class="text-center mt-4">
