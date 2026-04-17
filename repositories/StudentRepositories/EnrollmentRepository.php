@@ -13,26 +13,41 @@ use Illuminate\Database\Capsule\Manager as Capsule;
 class EnrollmentRepository extends Repository{
   
   public function enroll($userId, array $data, array $subjectIds) {
-    // Using Capsule::transaction handles the "Facade root" issue
     return Capsule::transaction(function() use ($userId, $data, $subjectIds) {
+      
+      $initial = \Models\StudentCourses::where('user_id', $userId)->first();
+
+      if (!$initial) {
+          // This is their very first time: Lock the course they chose
+          $initial = \Models\StudentCourses::create([
+              'user_id' => $userId,
+              'course_id' => $data['course_id']
+          ]);
+          $activeCourseId = $data['course_id'];
+      } else {
+          // Course is locked: Use the database value, NOT the user's input
+          $activeCourseId = $initial->course_id;
+      }
+
+      // 2. Create the Enrollment record using the locked Course ID
       $enrollment = Enrollment::create([
-        'user_id'      => $userId,
-        'period_id'    => $data['period_id'],
-        'course_id'    => $data['course_id'],
-        'grade_year'   => $data['grade_year'],
-        'id_number'    => $data['id_number'],
-        'scholar_type' => $data['scholar_type'],
-        'status'       => 'pending'
+          'user_id'      => $userId,
+          'period_id'    => $data['period_id'],
+          'course_id'    => $activeCourseId, // Use the locked ID here
+          'grade_year'   => $data['grade_year'],
+          'id_number'    => $data['id_number'],
+          'scholar_type' => $data['scholar_type'],
+          'status'       => 'pending'
       ]);
 
-      // Attach the subjects to the pivot table
       if (!empty($subjectIds)) {
-        $enrollment->subjects()->attach($subjectIds);
+          $enrollment->subjects()->attach($subjectIds);
       }
 
       return $enrollment;
     });
   }
+
   public function getCurriculumSubjects($courseId, $yearLevel, $semester)
   {
     return Curriculum::where('course_id', $courseId)

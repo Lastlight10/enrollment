@@ -194,71 +194,72 @@ class EnrollmentRepository extends Repository{
     return $successCount;
   }
   public function sendApprovalEmail($enrollment, $amount) {
-    $user = $enrollment->user;
-    if (!$user?->email) return;
-    $formattedAmount = number_format($amount, 2);
+      $user = $enrollment->user;
+      if (!$user?->email) return;
+      $formattedAmount = number_format($amount, 2);
 
-    // Find the downpayment amount from the generated fees
-    $downpayment = collect($enrollment->payments)
-        ->where('type', 'downpayment')
-        ->first();
-    
-    $amount = $downpayment ? number_format($downpayment->amount, 2) : '0.00';
+      // Find the downpayment amount from the generated fees
+      $downpayment = collect($enrollment->payments)
+          ->where('type', 'downpayment')
+          ->first();
+      
+      $amount = $downpayment ? number_format($downpayment->amount, 2) : '0.00';
 
-    $client = new \Google\Client();
-    $client->setAuthConfig(BASE_PATH . '/credentials.json');
-    $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
-    
-    $service = new \Google\Service\Gmail($client);
+      $client = new \Google\Client();
+      $client->setAuthConfig(BASE_PATH . '/credentials.json');
+      $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
+      
+      $service = new \Google\Service\Gmail($client);
 
-    $subject = "Welcome! Your Enrollment is Approved";
-    $baseUrl = 'http://enrollment.great-site.net';
-    $logoPath = $baseUrl . '/static/images/UMLOGO.jpg';
-    $messageBody = "
-    <html>
-    <body style='font-family: sans-serif; color: #333;'>
-        <div style='max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;'>
+      $subject = "Welcome! Your Enrollment is Approved";
+      $baseUrl = 'http://enrollment.great-site.net';
+      $logoPath = $baseUrl . '/static/images/UMLOGO.jpg';
+      $messageBody = "
+      <html>
+      <body style='font-family: sans-serif; color: #333;'>
+          <div style='max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;'>
 
-            <div style='background-color: white; padding: 30px 20px; text-align: center;'>
-              <img src='{$logoPath}' alt='University Logo' style='width: 80px; height: auto; margin-bottom: 10px;'>
-              <h4 style='color: #004d00; margin: 0; font-size: 24px; letter-spacing: 1px;'>The University of Manila</h1>
-              <h1 style='color: #004d00; margin: 0; font-size: 24px; letter-spacing: 1px;'>Admission Confirmed</h1>
-            </div>
+              <div style='background-color: white; padding: 30px 20px; text-align: center;'>
+                <img src='{$logoPath}' alt='University Logo' style='width: 80px; height: auto; margin-bottom: 10px;'>
+                <h4 style='color: #004d00; margin: 0; font-size: 24px; letter-spacing: 1px;'>The University of Manila</h1>
+                <h1 style='color: #004d00; margin: 0; font-size: 24px; letter-spacing: 1px;'>Admission Confirmed</h1>
+              </div>
 
-            <div style='padding: 30px;'>
-                <p>Hello <strong>{$user->full_name}</strong>,</p>
-                <p>Congratulations! Your enrollment for <strong>{$enrollment->period->acad_year} {$enrollment->period->semester}</strong> has been approved.</p>
-                
-                <p>To finalize your registration, please settle your downpayment:</p>
-                
-                <div style='background-color: #f8f9fa; border-radius: 5px; padding: 20px; text-align: center; margin: 20px 0;'>
-                    <span style='color: #6c757d; font-size: 14px;'>REQUIRED DOWNPAYMENT</span><br>
-                    <span style='font-size: 32px; font-weight: bold; color: #28a745;'>₱{$formattedAmount}</span>
-                </div>
-            </div>
-            <div style='background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
-                This is an automated notification. Please do not reply to this email.<br>
-                &copy; " . date('Y') . " The University of Manila
-            </div>
-        </div>
-    </body>
-    </html>";
+              <div style='padding: 30px;'>
+                  <p>Hello <strong>{$user->full_name}</strong>,</p>
+                  <p>Congratulations! Your enrollment for <strong>{$enrollment->period->acad_year} {$enrollment->period->semester}</strong> has been approved.</p>
+                  
+                  <p>To finalize your registration, please settle your downpayment:</p>
+                  
+                  <div style='background-color: #f8f9fa; border-radius: 5px; padding: 20px; text-align: center; margin: 20px 0;'>
+                      <span style='color: #6c757d; font-size: 14px;'>REQUIRED DOWNPAYMENT</span><br>
+                      <span style='font-size: 32px; font-weight: bold; color: #28a745;'>₱{$formattedAmount}</span>
+                  </div>
+              </div>
+              <div style='background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
+                  This is an automated notification. Please do not reply to this email.<br>
+                  &copy; " . date('Y') . " The University of Manila
+              </div>
+          </div>
+      </body>
+      </html>";
 
-    $strRawMessage = "To: {$user->email}\r\n";
-    $strRawMessage .= "Subject: {$subject}\r\n";
-    $strRawMessage .= "MIME-Version: 1.0\r\n";
-    $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
-    $strRawMessage .= $messageBody;
+      $strRawMessage = "To: {$user->email}\r\n";
+      $strRawMessage .= "Subject: {$subject}\r\n";
+      $strRawMessage .= "MIME-Version: 1.0\r\n";
+      $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
+      $strRawMessage .= $messageBody;
 
-    $mime = rtrim(strtr(base64_encode($strRawMessage), '+/', '-_'), '=');
-    $msg = new \Google\Service\Gmail\Message();
-    $msg->setRaw($mime);
+      $mime = rtrim(strtr(base64_encode($strRawMessage), '+/', '-_'), '=');
+      $msg = new \Google\Service\Gmail\Message();
+      $msg->setRaw($mime);
 
-    try {
-        $service->users_messages->send("me", $msg);
-    } catch (\Exception $e) {
-        Logger::log("Failed to send approval email to {$user->email}: " . $e->getMessage());
-    }
-}
+      try {
+          $service->users_messages->send("me", $msg);
+      } catch (\Exception $e) {
+          Logger::log("Failed to send approval email to {$user->email}: " . $e->getMessage());
+      }
+      }
+      
 }
 ?>

@@ -17,6 +17,16 @@ class CourseRepository extends Repository
     public function all() {
         return Course::all()->sortBy('course_name')->values()->all();
     }
+    public function thisCourseOnly($id) {
+        if ($id == 2) {
+            return []; // Return empty array instead of null
+        }
+
+        $course = Course::find($id);
+
+        // If a course is found, wrap it in an array; otherwise, return an empty array
+        return $course ? [$course] : [];
+    }
 
     public function create(array $data) {
         return Course::create($data);

@@ -5,6 +5,7 @@ namespace App\Repositories\UserAccounts;
 use App\Core\Repository;
 use App\Core\Logger;
 use Models\User;
+use Models\StudentCourses;
 use Models\Subject;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -20,6 +21,28 @@ class UserRepository extends Repository
   {
     return User::where('username', $identifier)->first();
   }
+
+  public function isEnrolled($id)
+  {
+    return User::where('id',$id)->value('is_enrolled');
+  }
+
+  public function getEnrolledCourse($id)
+  {
+    return StudentCourses::where('user_id',$id)->value('course_id');
+  }
+  public function enrollStudent($id)
+  {
+    $user = User::find($id);
+
+    if (!$user) {
+      return false; 
+    }
+    $user->is_enrolled = true;
+
+    return $user->save();
+  }
+
 
   public function findByToken($id)
   {
@@ -257,16 +280,11 @@ class UserRepository extends Repository
     $service->users_messages->send("me", $msg);
   }
 
-  // Ensure your findByToken looks in the User model, not Subject
   public function findByVerificationToken($token)
   {
     return User::where('verification_token', $token)->first();
   }
-/**
-   * Find an existing enrollment record for a specific user and academic period.
-   * Assumes you have an Enrollment model.
-   */
-  
+
   // Inside UserRepository class
   public function generateNextIdNumber() 
   {
@@ -302,6 +320,13 @@ class UserRepository extends Repository
 
     return $user->save();
   }
+  public function updateStudentCourse($userId, $courseId)
+  {
+    return StudentCourses::updateOrCreate(
+      ['user_id' => $userId],
+      ['course_id' => $courseId]
+    );
+  }
 
   public function deleteAccount($id) 
   {
@@ -313,21 +338,55 @@ class UserRepository extends Repository
     $client = new \Google\Client();
     $client->setAuthConfig(BASE_PATH . '/credentials.json');
     $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
-
+    $baseUrl = 'http://enrollment.great-site.net';
+    $logoPath = $baseUrl . '/static/images/UMLOGO.jpg';
     if ($client->isAccessTokenExpired()) {
-      $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
-      file_put_contents(BASE_PATH . '/token.json', json_encode($client->getAccessToken()));
+        $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+        file_put_contents(BASE_PATH . '/token.json', json_encode($client->getAccessToken()));
     }
+    $user = User::where('email', $email)->first();
 
+    if (!$user) {
+      error_log("Email Error: No user found for $email");
+      return; 
+    }
     $service = new \Google\Service\Gmail($client);
     
-    $body = "<html><body>
-                <h3>Staff Account Update Notice</h3>
-                <p>Your account information has been updated in Enrollment System.</p>
-            </body></html>";
+    // Modern HTML Template
+    $body = "
+    <html>
+    <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0;'>
+        <div style='max-width: 600px; margin: 20px auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
+            <div style='background-color: white; padding: 20px; text-align: center;'>
+                  <img src='{$logoPath}' alt='University Logo' style='width: 80px; height: auto; margin-bottom: 10px;'>
+                    <h4 style='color: #004d00; margin: 0; font-size: 24px; letter-spacing: 1px;'>The University of Manila</h1>
+                    <h1 style='color: #004d00; margin: 0; font-size: 20px;'>Payment Announcement</h1>
+            </div>
+            <div style='padding: 30px;'>
+                <h3 style='color: #004d00;'>Account Update Notification</h3>
+                <p>Hello,</p>
+                <p>This is to inform you that your <strong>account information</strong> has been successfully updated by the system administrator.</p>
+                
+                <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #004d00; margin: 20px 0;'>
+                    <p style='margin: 0;'><strong>Action Taken:</strong> Profile/Record Update</p>
+                    <p style='margin: 0;'><strong>Date:</strong> " . date('F j, Y, g:i a') . "</p>
+                    <p style='margin: 0;'><strong>Username:</strong> " . htmlspecialchars($user->username) . "</p>
+                    <p style='margin: 0;'><strong>Email:</strong> " . htmlspecialchars($user->email) . "</p>
+                </div>
+
+                <p>If you did not authorize these changes or have questions, please contact the IT Support office immediately.</p>
+                
+            </div>
+            <div style='background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
+                <p style='margin: 0;'>This is an automated message. Please do not reply to this email.</p>
+                <p style='margin: 0;'>&copy; " . date('Y') . " The University of Manila</p>
+            </div>
+        </div>
+    </body>
+    </html>";
 
     $strRawMessage = "To: $email\r\n";
-    $strRawMessage .= "Subject: Account Information Updated\r\n";
+    $strRawMessage .= "Subject: Security Notice: Account Information Updated\r\n";
     $strRawMessage .= "MIME-Version: 1.0\r\n";
     $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
     $strRawMessage .= $body;
@@ -337,9 +396,9 @@ class UserRepository extends Repository
     $msg->setRaw($mime);
 
     try {
-      $service->users_messages->send("me", $msg);
+        $service->users_messages->send("me", $msg);
     } catch (\Exception $e) {
-      error_log("Gmail API Error: " . $e->getMessage());
+        error_log("Gmail API Error: " . $e->getMessage());
     }
   }
    public function sendRegisteredStaffEmail($email)
@@ -376,5 +435,71 @@ class UserRepository extends Repository
       error_log("Gmail API Error: " . $e->getMessage());
     }
   }
+  public function sendStudentCourse($userId, $courseId)
+  {
+      $client = new \Google\Client();
+      $client->setAuthConfig(BASE_PATH . '/credentials.json');
+      $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
+
+      if ($client->isAccessTokenExpired()) {
+          $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+          file_put_contents(BASE_PATH . '/token.json', json_encode($client->getAccessToken()));
+      }
+
+      $user = \Models\User::find($userId);
+      // Assuming you have a Course model or a courses table
+      $courseName = \Models\Course::where('id', $courseId)->value('course_name') ?? 'Selected Course';
+      
+      $baseUrl = 'http://enrollment.great-site.net';
+      $logoPath = $baseUrl . '/static/images/UMLOGO.jpg';
+      $service = new \Google\Service\Gmail($client);
+
+      $body = "
+      <html>
+      <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+          <div style='max-width: 600px; margin: 20px auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
+              <div style='background-color: white; padding: 20px; text-align: center; border-bottom: 2px solid #004d00;'>
+                  <img src='{$logoPath}' alt='University Logo' style='width: 80px; height: auto;'>
+                  <h4 style='color: #004d00; margin: 10px 0 0 0;'>The University of Manila</h4>
+              </div>
+              <div style='padding: 30px;'>
+                  <h3 style='color: #004d00;'>Course Assignment Update</h3>
+                  <p>Hello <b>" . htmlspecialchars($user->first_name) . "</b>,</p>
+                  <p>Your official course for the current academic period has been updated/assigned by the Registrar.</p>
+                  
+                  <div style='background-color: #f8f9fa; padding: 20px; border-radius: 5px; border-left: 4px solid #004d00; margin: 20px 0; text-align: center;'>
+                      <span style='font-size: 14px; color: #666; display: block; margin-bottom: 5px;'>NEW ASSIGNED COURSE:</span>
+                      <strong style='font-size: 18px; color: #004d00;'>" . htmlspecialchars($courseName) . "</strong>
+                  </div>
+
+                  <p>You may now proceed to the student portal to view your schedule and available subjects for this course.</p>
+                  
+                  <div style='text-align: center; margin-top: 25px;'>
+                      <a href='{$baseUrl}/auth/login' style='background-color: #004d00; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;'>Go to Student Portal</a>
+                  </div>
+              </div>
+              <div style='background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 11px; color: #777;'>
+                  &copy; " . date('Y') . " The University of Manila - Registrar's Office
+              </div>
+          </div>
+      </body>
+      </html>";
+
+      $strRawMessage = "To: {$user->email}\r\n";
+      $strRawMessage .= "Subject: Notification: Course Assignment Updated\r\n";
+      $strRawMessage .= "MIME-Version: 1.0\r\n";
+      $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
+      $strRawMessage .= $body;
+
+      $mime = rtrim(strtr(base64_encode($strRawMessage), '+/', '-_'), '=');
+      $msg = new \Google\Service\Gmail\Message();
+      $msg->setRaw($mime);
+
+      try {
+          $service->users_messages->send("me", $msg);
+      } catch (\Exception $e) {
+          error_log("Gmail API Error (Course Update): " . $e->getMessage());
+      }
+    }
 
 }

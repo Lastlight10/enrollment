@@ -4,12 +4,14 @@ namespace Controllers;
 use App\Core\Controller;
 use App\Core\Logger;
 use App\Core\Request;
+use App\Repositories\UserAccounts\UserRepository;
 use Models\Enrollment;
 use Exception;
 use App\Repositories\StaffRepositories\EnrollmentRepository;
 
 class StaffEnrollmentController extends Controller {
   protected $enrollmentRepo;
+  protected $userRepo;
 
   public function __construct() {
     if (!isset($_SESSION['user_id'])) {
@@ -22,6 +24,7 @@ class StaffEnrollmentController extends Controller {
       $this->redirect('/dashboard'); // Adjusted to general dashboard
     }
     $this->enrollmentRepo = new EnrollmentRepository();
+    $this->userRepo = new UserRepository();
   }
 
   public function enrollments() {
@@ -60,6 +63,8 @@ class StaffEnrollmentController extends Controller {
     $enrollment = $this->enrollmentRepo->approveWithFees($id, $validated['fees']);
 
     if ($enrollment) {
+      $this->userRepo->enrollStudent($enrollment->user_id);
+      
       $downpaymentAmount = 0;
       foreach ($validated['fees'] as $fee) {
         if ($fee['type'] === 'downpayment') {

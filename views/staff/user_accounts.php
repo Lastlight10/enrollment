@@ -34,7 +34,14 @@
 <?php endif; ?>
 
 <div class="row mb-3">
-  <div class="col-md-4 ms-auto">
+  <div class="col-md-3 ms-auto">
+    <select id="typeFilter" class="form-select shadow-sm" onchange="filterUsers()">
+      <option value="all">All Account Types</option>
+      <option value="staff">Staff Only</option>
+      <option value="student">Students Only</option>
+    </select>
+  </div>
+  <div class="col-md-4">
     <div class="input-group shadow-sm">
       <span class="input-group-text bg-white border-end-0">
         <i class="bi bi-search text-muted"></i>
@@ -156,7 +163,7 @@
           <div class="col-md-6">
             <label class="form-label small fw-bold">Initial Status</label>
             <select name="status" class="form-select">
-              <option value="inactive" selected>Active</option>
+              <option value="active" selected>Active</option>
               <option value="inactive" selected>Inactive</option>
             </select>
           </div>
@@ -219,6 +226,41 @@
               <option value="inactive">Inactive</option>
             </select>
           </div>
+          <div class="col-md-12" id="course_selection_container">
+              <label class="form-label small fw-bold text-uppercase text-muted">Official Enrolled Course</label>
+              
+              <div class="border rounded p-2 bg-light shadow-sm">
+                  <div class="input-group input-group-sm mb-2">
+                      <span class="input-group-text bg-white border-end-0">
+                          <i class="bi bi-search text-muted"></i>
+                      </span>
+                      <input 
+                          type="text" 
+                          id="modalCourseSearch" 
+                          class="form-control border-start-0 border-end-0 ps-0" 
+                          placeholder="Type to filter courses..."
+                          maxlength="50"
+                          onkeyup="filterModalCourses()">
+                      <button class="btn btn-outline-secondary border-start-0 bg-white" type="button" onclick="resetModalCourseFilter()">
+                          <i class="bi bi-x-lg text-muted"></i>
+                      </button>
+                  </div>
+
+                  <select name="course_id" id="modal_course_id" class="form-select shadow-none" size="5" 
+                      style="height: 150px; overflow-y: auto; border: 1px solid #dee2e6;">
+                      <option value="" id="modalCoursePlaceholder" class="text-muted italic">-- Select Course --</option>
+                      <?php foreach ($courses as $c): ?>
+                          <option value="<?= $c->id ?>">
+                              <?= htmlspecialchars($c->course_name ?? '') ?>
+                          </option>
+                      <?php endforeach; ?>
+                  </select>
+                  
+                  <div id="modalNoCourseMessage" class="small text-danger mt-2 d-none">
+                      <i class="bi bi-exclamation-circle"></i> No matching courses found.
+                  </div>
+              </div>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -252,18 +294,60 @@
       window.location.href = '/staff/user_accounts/delete/' + id;
     }
   }
+
+  function filterModalCourses() {
+    const input = document.getElementById("modalCourseSearch");
+    const filter = input.value.toLowerCase();
+    const select = document.getElementById("modal_course_id");
+    const options = select.options;
+    const placeholder = document.getElementById('modalCoursePlaceholder');
+    const noResults = document.getElementById('modalNoCourseMessage');
+    let foundCount = 0;
+
+    for (let i = 0; i < options.length; i++) {
+        // Skip placeholder
+        if (options[i].id === 'modalCoursePlaceholder') continue;
+
+        const text = options[i].textContent || options[i].innerText;
+        const isMatch = text.toLowerCase().indexOf(filter) > -1;
+        
+        options[i].style.display = isMatch ? "" : "none";
+        if (isMatch) foundCount++;
+    }
+
+    // Toggle "No results" and placeholder visibility
+    noResults.classList.toggle('d-none', foundCount > 0 || filter === "");
+    placeholder.style.display = (filter === "") ? "" : "none";
+}
+function resetModalCourseFilter() {
+    const input = document.getElementById("modalCourseSearch");
+    input.value = "";
+    filterModalCourses();
+    input.focus();
+}
+  
   function filterUsers() {
   const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+  const typeFilter = document.getElementById('typeFilter').value.toLowerCase();
   const rows = document.querySelectorAll('.user-row');
   let visibleCount = 0;
 
   rows.forEach(row => {
-    // We target the first three <td> elements: Name, Username, and Email
     const name = row.cells[0].textContent.toLowerCase();
     const username = row.cells[1].textContent.toLowerCase();
     const email = row.cells[2].textContent.toLowerCase();
+    
+    // Get the type from the badge text (4th column, index 3)
+    const type = row.cells[3].textContent.trim().toLowerCase();
 
-    if (name.includes(searchTerm) || username.includes(searchTerm) || email.includes(searchTerm)) {
+    // Logic: Match Search Text AND Match Type Filter
+    const matchesSearch = name.includes(searchTerm) || 
+                          username.includes(searchTerm) || 
+                          email.includes(searchTerm);
+                          
+    const matchesType = (typeFilter === "all") || (type === typeFilter);
+
+    if (matchesSearch && matchesType) {
       row.style.display = "";
       visibleCount++;
     } else {
@@ -271,42 +355,49 @@
     }
   });
 
-  // Optional: Handle "No results" visual feedback
+  // Handle "No results" visual feedback
   let noResultsRow = document.getElementById('noUserResults');
-    if (visibleCount === 0) {
-      if (!noResultsRow) {
-        const tbody = document.querySelector('tbody');
-        const tr = document.createElement('tr');
-        tr.id = 'noUserResults';
-        tr.innerHTML = `<td colspan="6" class="text-center py-4 text-muted">No accounts match your search.</td>`;
-        tbody.appendChild(tr);
-      }
-    } else if (noResultsRow) {
-      noResultsRow.remove();
+  if (visibleCount === 0) {
+    if (!noResultsRow) {
+      const tbody = document.querySelector('tbody');
+      const tr = document.createElement('tr');
+      tr.id = 'noUserResults';
+      tr.innerHTML = `<td colspan="6" class="text-center py-4 text-muted">No accounts match your criteria.</td>`;
+      tbody.appendChild(tr);
     }
+  } else if (noResultsRow) {
+    noResultsRow.remove();
   }
-  let editModalInstance = null;
-  function editUser(user) {
-  // Set the form action dynamically
-  const form = document.getElementById('editForm');
-  form.action = '/staff/user_accounts/update/' + user.id;
-
-  // Populate fields
-  document.getElementById('edit_first_name').value = user.first_name;
-  document.getElementById('edit_mid_name').value = user.mid_name || '';
-  document.getElementById('edit_last_name').value = user.last_name;
-  document.getElementById('edit_username').value = user.username;
-  document.getElementById('edit_email').value = user.email;
-
-  document.getElementById('edit_type').value = user.type;
-  document.getElementById('edit_status').value = user.status;
-
-  document.getElementById('hidden_edit_type').value = user.type;
-
-  // Show the modal
-  if (!editModalInstance) {
-    editModalInstance = new bootstrap.Modal(document.getElementById('editUserModal'));
-  }
-  editModalInstance.show();
 }
+
+  function editUser(user) {
+    const form = document.getElementById('editForm');
+    form.action = '/staff/user_accounts/update/' + user.id;
+
+    // Standard fields
+    document.getElementById('edit_first_name').value = user.first_name;
+    document.getElementById('edit_mid_name').value = user.mid_name || '';
+    document.getElementById('edit_last_name').value = user.last_name;
+    document.getElementById('edit_username').value = user.username;
+    document.getElementById('edit_email').value = user.email;
+    document.getElementById('edit_type').value = user.type;
+    document.getElementById('edit_status').value = user.status;
+    document.getElementById('hidden_edit_type').value = user.type;
+
+    // --- STUDENT ONLY LOGIC ---
+    resetModalCourseFilter();
+
+    // Show course selection ONLY if user is a student
+    const courseContainer = document.getElementById('course_selection_container');
+    if (user.type === 'student') {
+        courseContainer.classList.remove('d-none');
+        document.getElementById('modal_course_id').value = user.course_id || "";
+    } else {
+        courseContainer.classList.add('d-none');
+    }
+
+    // Show the modal (using your preferred bootstrap method)
+    const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    editModal.show();
+  }
 </script>

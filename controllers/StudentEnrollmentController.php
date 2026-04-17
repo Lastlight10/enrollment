@@ -10,11 +10,13 @@ use App\Repositories\StudentRepositories\EnrollmentRepository as StudentEnrollme
 use App\Repositories\StaffRepositories\AcademicPeriodRepository;
 use App\Repositories\StaffRepositories\SubjectRepository;
 use App\Repositories\StaffRepositories\CourseRepository;
+use App\Repositories\UserAccounts\UserRepository;
 use Exception;
 
 class StudentEnrollmentController extends Controller
 {
   private $enrollRepo;
+  private $userRepo;
 
   public function __construct()
   {
@@ -23,6 +25,7 @@ class StudentEnrollmentController extends Controller
       $this->redirect('/auth/login');
     }
     $this->enrollRepo = new StudentEnrollmentRepo();
+    $this->userRepo = new UserRepository();
   }
 
   public function index()
@@ -38,9 +41,17 @@ class StudentEnrollmentController extends Controller
   }
   public function showForm()
     {
+
       $periodRepo = new AcademicPeriodRepository();
       $subjectRepo = new SubjectRepository();
       $courseRepo = new CourseRepository();
+      $userId = $_SESSION['user_id'];
+      if ($this->userRepo->IsEnrolled($userId)){
+        $courseId = $this->userRepo->getEnrolledCourse($userId);
+        $courses = $courseRepo->thisCourseOnly($courseId);
+      } else {
+        $courses = $courseRepo->allNoGe();
+      }
 
       $periods = $periodRepo->getActivePeriods(); 
       
@@ -48,7 +59,7 @@ class StudentEnrollmentController extends Controller
         'title'    => 'Online Enrollment',
         'periods'  => $periods,
         'subjects' => $subjectRepo->all(),
-        'courses'  => $courseRepo->allNoGe()
+        'courses'  => $courses
       ]);
     }
 

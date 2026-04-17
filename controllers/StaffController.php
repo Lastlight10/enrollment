@@ -9,6 +9,7 @@ use Models\User;
 use Models\Payment;
 use Models\Enrollment;
 use App\Repositories\UserAccounts\UserRepository;
+use App\Repositories\StaffRepositories\CourseRepository;
 use Exception;
 
 class StaffController extends Controller
@@ -59,10 +60,16 @@ class StaffController extends Controller
 
   public function user_accounts()
   {
-    $users = User::where('type', '!=', 'admin')->get();
+    $courseRepo = new CourseRepository();
+    $users = User::where('type', '!=', 'admin')
+        ->leftJoin('student_courses', 'users.id', '=', 'student_courses.user_id')
+        ->leftJoin('courses', 'student_courses.course_id', '=', 'courses.id')
+        ->select('users.*', 'courses.course_name', 'courses.id as course_id')
+        ->get();
     return $this->staffView('staff/user_accounts', [
       'users' => $users,
-      'title' => 'Manage Accounts'
+      'title' => 'Manage Accounts',
+      'courses' => $courseRepo->allNoGe(),
     ]);
   }
 
@@ -107,16 +114,44 @@ class StaffController extends Controller
   // FIX: Added Request $request, $id
   public function updateAccount(Request $request, $id)
   {
-    $result = $this->userRepo->updateAccount($id, $request->all());
+    $data = $request->all();
+    
+    // 1. Update the basic User record (names, email, status, etc.)
+    $result = $this->userRepo->updateAccount($id, $data);
 
     if ($result) {
       $user = $this->userRepo->find($id);
-      $this->userRepo->sendPendingApprovalEmail($user->email);
 
-      $_SESSION['success'] = "Account updated. Email has been sent.";
+      // 2. Handle Student-Specific Course Locking
+      // Check the 'type' from the hidden input or the user object
+      if ($user->type === 'student' && !empty($data['course_id'])) {
+        $currentCourseId = $this->userRepo->getEnrolledCourse($id);
+
+        if ($currentCourseId != $data['course_id']) {
+          $this->userRepo->updateStudentCourse($id, $data['course_id']);
+          $this->userRepo->sendStudentCourse($id,$data['course_id']);
+          $_SESSION['success'] = "Student course updated successfully.";
+        } else {
+          if (!$user->isDirty()) {
+            $_SESSION['info'] = "No changes were made to the account or course.";
+          }
+        }
+      }
+
+      // 3. Send Notification
+      
+
+      if ($result === 'no_changes') {
+        $_SESSION['info'] = "No changes were made to the personal information.";
+      } else {
+        $_SESSION['success'] = "Personal Information updated. Notification email has been sent.";
+        $this->userRepo->sendPendingApprovalEmail($user->email);
+      }
+    } else {
+      $_SESSION['error'] = "Failed to update account.";
     }
     
-    $this->redirect('/staff/user_accounts');
+    return $this->redirect('/staff/user_accounts');
   }
 
   // FIX: Added Request $request, $id

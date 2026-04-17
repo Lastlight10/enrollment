@@ -70,7 +70,7 @@
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
-          <th class="ps-4">Student ID</th>
+          <th class="ps-4">Enrollment #</th>
           <th>Name</th>
           <th>Course</th>
           <th>Date</th>
@@ -83,7 +83,7 @@
         <?php else: ?>
           <?php foreach($recentEnrollments as $e): ?>
             <tr>
-              <td class="ps-4 fw-bold">#<?= $e->id ?></td>
+              <td class="ps-4 fw-bold "><?= $e->id ?></td>
               <td><?= htmlspecialchars($e->user->full_name) ?></td>
               <td><?= htmlspecialchars($e->course->course_code) ?></td>
               <td><?= date('M d, Y', strtotime($e->created_at)) ?></td>

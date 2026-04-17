@@ -20,7 +20,8 @@ class User extends Model {
         'status',
         'otp_code',
         'otp_expires_at',
-        'verification_token'
+        'verification_token',
+        'is_enrolled'
     ];
     public function getEmail() { return $this->email; }
     public function getUsername() { return $this->username; }
@@ -31,7 +32,7 @@ class User extends Model {
     ];
     protected $casts = [
         'birth_date' => 'date',
-
+        'is_enrolled' => 'boolean',
     ];
 
     public function setPasswordAttribute($value)
