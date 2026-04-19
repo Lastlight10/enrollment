@@ -270,8 +270,11 @@
         </div>
         <hr class="text-muted opacity-25">
         <label class="small text-muted fw-bold mb-2">FEE BREAKDOWN</label>
+        
         <div id="fee-container">
+          
           <div class="row g-2 mb-2 fee-row align-items-end">
+            <small>Minimum of amount of ₱1000</small>
             <div class="col-7">
               <label class="form-label x-small mb-1">Type</label>
               <select name="fees[0][type]" class="form-select border-0 shadow-sm" required>
@@ -291,7 +294,7 @@
                   placeholder="0.00" 
                   step="0.01" 
                   required 
-                  min="0.01" 
+                  min="1000" 
                   max="99999"
                   oninput="if(this.value.length > 5) this.value = this.value.slice(0, 5);">
             </div>

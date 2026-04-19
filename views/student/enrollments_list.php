@@ -13,6 +13,7 @@
           <table class="table table-hover align-middle mb-0">
             <thead class="bg-light">
               <tr>
+                <th class="ps-4">Payments</th>
                 <th class="ps-4">Reference #</th>
                 <th>Course</th>
                 <th>Academic Period</th>
@@ -24,6 +25,23 @@
             <tbody>
               <?php foreach($enrollments as $en): ?>
               <tr>
+                <td class="ps-4">
+                  <div class="d-flex flex-column gap-1">
+                      <?php 
+                      $payments = $en->payments;
+                      if($payments->count() > 0): 
+                          foreach($payments as $p): ?>
+                              <div class="d-flex align-items-center small">
+                                  <i class="bi <?= $p->status === 'paid' ? 'bi-check-circle-fill text-success' : 'bi-clock-history text-warning' ?> me-2"></i>
+                                  <span class="text-secondary"><?= htmlspecialchars($p->payment_type) ?>:</span>
+                                  <span class="ms-1 fw-bold">₱<?= number_format($p->amount, 2) ?></span>
+                              </div>
+                          <?php endforeach; 
+                      else: ?>
+                          <span class="text-muted small">No fees generated</span>
+                      <?php endif; ?>
+                  </div>
+              </td>
                 <td class="ps-4 fw-bold">#<?= $en->id ?></td>
                 <td><?= htmlspecialchars($en->course->course_name ?? 'N/A') ?></td>
                 <td>
@@ -54,6 +72,17 @@
         <div class="card border-0 shadow-sm mb-3">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="mt-2 p-2 bg-light rounded">
+                  <small class="text-muted d-block mb-1">Payment Status</small>
+                  <?php foreach($en->payments as $p): ?>
+                      <div class="d-flex justify-content-between small border-bottom-dashed py-1">
+                          <span><?= htmlspecialchars($p->payment_type) ?></span>
+                          <span class="fw-bold <?= $p->status === 'paid' ? 'text-success' : 'text-danger' ?>">
+                              <?= $p->status === 'paid' ? 'Paid' : '₱'.number_format($p->amount, 2) ?>
+                          </span>
+                      </div>
+                  <?php endforeach; ?>
+              </div>
               <div>
                 <span class="text-muted small">Ref #<?= $en->id ?></span>
                 <h6 class="fw-bold mb-0"><?= htmlspecialchars($en->course->course_name ?? 'N/A') ?></h6>

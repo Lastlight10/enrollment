@@ -62,6 +62,10 @@ class EnrollmentRepository extends Repository{
       ->where('status', 'pending')
       ->get();
   }
+  public function getPayments(int $userId)
+  {
+    return \Models\User::findOrFail($userId)->payments;
+  }
   public function approveWithFees(int $id, array $fees) {
     return DB::transaction(function () use ($id, $fees) {
       $enrollment = Enrollment::findOrFail($id);
@@ -81,6 +85,7 @@ class EnrollmentRepository extends Repository{
       return $enrollment;
     });
   }
+
   public function updatePaymentStatus($paymentId, $data)
   {
       return DB::table('payments')->where('id', $paymentId)->update([
