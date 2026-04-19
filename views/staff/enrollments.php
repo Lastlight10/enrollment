@@ -352,6 +352,7 @@
 
   // Attach listener to the modal to catch all input changes
   document.addEventListener('DOMContentLoaded', () => {
+    populateFilters();
     const modal = document.getElementById('enrollModal');
     if (modal) {
       modal.addEventListener('input', updateLiveTotal);
