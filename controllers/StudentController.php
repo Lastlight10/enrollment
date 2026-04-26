@@ -2,6 +2,7 @@
 namespace Controllers;
 
 use App\Core\Controller;
+use Models\StudentCourses;
 use Models\User;
 
 class StudentController extends Controller {
@@ -23,6 +24,7 @@ class StudentController extends Controller {
     
     // Using your existing User model to find the logged-in student
     $user = User::find($userId);
+    $user_course = StudentCourses::where('user_id', $userId)->first();
 
     if (!$user) {
       $_SESSION['error'] = "User not found.";
@@ -32,7 +34,8 @@ class StudentController extends Controller {
     // This renders the profile.php template within your layout
     $this->studentView('student/profile', [
       'title' => 'My Profile',
-      'user'  => $user
+      'user'  => $user,
+      'user_course' => $user_course,
     ]);
   }
 

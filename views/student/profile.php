@@ -73,6 +73,13 @@
               </div>
 
               <div class="col-md-6">
+                <label class="form-label small fw-bold">Course Enrolled</label>
+                <input type="text" name="course" class="form-control form-control-sm " 
+                value="<?= ($user_course && $user_course->course) ? htmlspecialchars($user_course->course->course_name) : 'Not Enrolled' ?>" 
+                readonly>
+              </div>
+
+              <div class="col-md-6">
                 <label class="form-label small fw-bold">Birth Date</label>
                 <input type="date" name="birth_date" class="form-control form-control-sm" value="<?= $user->birth_date ? date('Y-m-d', strtotime($user->birth_date)) : '' ?>" min="1960-01-01" max="2010-01-01">
               </div>

@@ -53,4 +53,8 @@ class User extends Model {
         return $this->hasMany(Payment::class, 'verified_by');
     }
     
+    public function enrolledCourse()
+    {
+        return $this->has(StudentCourses::class,'user_id');
+    }
 }
