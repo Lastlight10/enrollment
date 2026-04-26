@@ -535,55 +535,56 @@ function populateFilters() {
 }
 
 function filterEnrollments() {
-    const searchTerm = document.getElementById('enrollmentSearch').value.toLowerCase();
+    // 1. Get all current filter values
+    const searchTerm = document.getElementById('enrollmentSearch').value.toLowerCase().trim();
     const filterCourse = document.getElementById('filterCourse').value;
     const filterStatus = document.getElementById('filterStatus').value.toLowerCase();
     const filterYear = document.getElementById('filterYear').value;
     const filterDateInput = document.getElementById('filterDate').value;
-    const filterPeriod = document.getElementById('filterPeriod').value; // New Filter
+    const filterPeriod = document.getElementById('filterPeriod').value;
 
     const rows = document.querySelectorAll('#enrollmentTableBody tr:not(.no-results)');
     let visibleCount = 0;
 
     rows.forEach(row => {
+        // 2. Extract data from the row
         const studentText = row.querySelector('.searchable-student').innerText.toLowerCase();
-        const courseCode = row.querySelector('td:nth-child(3) .fw-bold').innerText;
-        const yearLevel = row.querySelector('td:nth-child(3) .badge').innerText;
-        const status = row.querySelector('td:nth-child(6) .badge').innerText.toLowerCase(); // Adjusted index
-        const periodText = row.querySelector('.searchable-period').innerText;
+        const courseCode = row.querySelector('td:nth-child(3) .fw-bold').innerText.trim();
+        const yearLevel = row.querySelector('td:nth-child(3) .badge').innerText.trim();
+        const status = row.querySelector('td:nth-child(6) .badge').innerText.toLowerCase().trim();
+        const periodText = row.querySelector('.searchable-period').innerText.trim();
 
-        // Date Logic
-        const rowDateRaw = row.querySelector('td:nth-child(5)').innerText.trim(); // Adjusted index
+        // Date Parsing Logic
+        const rowDateRaw = row.querySelector('td:nth-child(5)').innerText.trim();
         const dateObj = new Date(rowDateRaw);
         const rowDateFormatted = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
 
-        // Logic Checks
-        const matchesSearch = studentText.includes(searchTerm);
+        // 3. Perform Logical Comparison
+        // If the filter is empty/default, it automatically matches (true)
+        const matchesSearch = searchTerm === "" || studentText.includes(searchTerm);
         const matchesCourse = filterCourse === "" || courseCode === filterCourse;
         const matchesStatus = filterStatus === "" || status === filterStatus;
-        const matchesYear = filterYear === "" || yearLevel === filterYear;
-        const matchesDate = filterDateInput === "" || rowDateFormatted === filterDateInput;
-        const matchesPeriod = filterPeriod === "" || periodText === filterPeriod; // New Logic Check
+        const matchesYear   = filterYear === "" || yearLevel === filterYear;
+        const matchesDate   = filterDateInput === "" || rowDateFormatted === filterDateInput;
+        const matchesPeriod = filterPeriod === "" || periodText === filterPeriod;
 
+        // 4. Final Decision: Row must satisfy ALL conditions
         if (matchesSearch && matchesCourse && matchesStatus && matchesYear && matchesDate && matchesPeriod) {
-            row.style.display = "";
+            row.style.display = ""; // Show
             visibleCount++;
         } else {
-            row.style.display = "none";
+            row.style.display = "none"; // Hide
         }
     });
 
-    // ... Handle "No results found" logic remains the same ...
-
-
-    // Handle "No results found" display
+    // 5. Handle "No results found"
     let noResultsMsg = document.querySelector('.no-results');
     if (visibleCount === 0) {
         if (!noResultsMsg) {
             const tbody = document.getElementById('enrollmentTableBody');
             const tr = document.createElement('tr');
             tr.className = 'no-results';
-            tr.innerHTML = `<td colspan="5" class="text-center py-5 text-muted">No applications match your filters.</td>`;
+            tr.innerHTML = `<td colspan="7" class="text-center py-5 text-muted">No applications match your filters.</td>`;
             tbody.appendChild(tr);
         }
     } else if (noResultsMsg) {

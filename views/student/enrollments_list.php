@@ -33,7 +33,7 @@
                           foreach($payments as $p): ?>
                               <div class="d-flex align-items-center small">
                                   <i class="bi <?= $p->status === 'paid' ? 'bi-check-circle-fill text-success' : 'bi-clock-history text-warning' ?> me-2"></i>
-                                  <span class="text-secondary"><?= htmlspecialchars($p->payment_type) ?>:</span>
+                                  <span class="text-secondary text-uppercase"><?= htmlspecialchars($p->payment_type) ?>:</span>
                                   <span class="ms-1 fw-bold">₱<?= number_format($p->amount, 2) ?></span>
                               </div>
                           <?php endforeach; 
@@ -43,7 +43,7 @@
                   </div>
               </td>
                 <td class="ps-4 fw-bold">#<?= $en->id ?></td>
-                <td><?= htmlspecialchars($en->course->course_name ?? 'N/A') ?></td>
+                <td><?= htmlspecialchars($en->course->course_code ?? 'N/A') ?></td>
                 <td>
                   <div class="fw-bold text-dark"><?= htmlspecialchars($en->period->acad_year ?? 'N/A') ?></div>
                   <div class="small text-muted"><?= htmlspecialchars($en->period->semester ?? '') ?></div>
@@ -76,7 +76,7 @@
                   <small class="text-muted d-block mb-1">Payment Status</small>
                   <?php foreach($en->payments as $p): ?>
                       <div class="d-flex justify-content-between small border-bottom-dashed py-1">
-                          <span><?= htmlspecialchars($p->payment_type) ?></span>
+                          <span><?= htmlspecialchars(strtoupper($p->payment_type)) ?></span>
                           <span class="fw-bold <?= $p->status === 'paid' ? 'text-success' : 'text-danger' ?>">
                               <?= $p->status === 'paid' ? 'Paid' : '₱'.number_format($p->amount, 2) ?>
                           </span>

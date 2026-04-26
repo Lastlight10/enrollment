@@ -34,15 +34,23 @@
 
         <div class="mb-3">
             <label class="form-label">New Password</label>
-            <input type="password" name="password" class="form-control form-control-lg" placeholder="Enter new password" required autofocus maxlength="30"
-            oninput="validateLength(this, 'userHint')">
+            <div class="input-group">
+                <input type="password" name="password" id="password" class="form-control form-control-lg" placeholder="Enter new password" required autofocus maxlength="30" oninput="validateLength(this, 'userHint')">
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password', this)">
+                    Show
+                </button>
+            </div>
             <small id="userHint" class="text-danger d-none">Must be 6-30 characters.</small>
         </div>
 
         <div class="mb-4">
             <label class="form-label">Confirm Password</label>
-            <input type="password" name="confirm_password" class="form-control form-control-lg" placeholder="Confirm new password" required maxlength="30"
-            oninput="validateLength(this, 'passHint')">
+            <div class="input-group">
+                <input type="password" name="confirm_password" id="confirm_password" class="form-control form-control-lg" placeholder="Confirm new password" required maxlength="30" oninput="validateLength(this, 'passHint')">
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_password', this)">
+                    Show
+                </button>
+            </div>
             <small id="passHint" class="text-danger d-none">Must be 6-30 characters.</small>
         </div>
 
@@ -73,7 +81,18 @@
 
       return true; // This allows the form to submit
   }
-
+function togglePassword(inputId, button) {
+    const input = document.getElementById(inputId);
+    const icon = button.querySelector('i');
+    
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+    } else {
+        input.type = "password";
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+    }
+}
   function validateLength(input, hintId) {
     input.value = input.value.replace(/\s+/g, '');
     const hint = document.getElementById(hintId);
