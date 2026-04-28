@@ -453,6 +453,14 @@
 
   function addRow() {
     const container = document.getElementById('fee-container');
+
+    const rows = document.querySelectorAll('.fee-row');
+    
+    // Add a limit of 10 rows
+    if (rows.length >= 4) {
+        alert("You can only add a maximum of 4 fees per student.");
+        return;
+    }
     const div = document.createElement('div');
     div.className = 'row g-2 mb-2 fee-row align-items-end';
     

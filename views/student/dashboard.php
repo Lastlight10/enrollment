@@ -26,6 +26,17 @@
       </a>
     </div>
   </div>
+  
+  <div class="mt-3 col">
+    <label>
+      Date Today:
+    </label>
+    <p class="text-muted"> <?= date('F d, Y') ?>.</p>
+    <label>
+      Time:
+    </label>
+    <p class="text-muted"> <?= date("h:i A") ?>.</p>
+  </div>
 
   <div class="row mb-4">
     <div class="col-12">

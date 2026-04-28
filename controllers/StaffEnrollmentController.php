@@ -83,23 +83,41 @@ class StaffEnrollmentController extends Controller {
   /**
    * New: Reject with Comments
    */
-  public function reject(Request $request, $id) {
+  /**
+ * Reject with Comments
+ */
+public function reject(Request $request, $id) {
     $validated = $request->validate([
-      'staff_comments' => 'required|string|max:500'
+        'staff_comments' => 'required|string|max:500'
     ]);
 
-    // Update status to rejected and save the staff comment
-    $this->enrollmentRepo->updateStatus($id, 'rejected', $validated['staff_comments']);
-    
+    // Update status and return the enrollment object
+    $enrollment = $this->enrollmentRepo->updateStatus($id, 'rejected', $validated['staff_comments']);
+
+    if ($enrollment) {
+        // Pass the object, consistent with approve()
+        $this->enrollmentRepo->sendRejectionEmail($enrollment);
+    }
+
     $_SESSION['success'] = "Application has been rejected.";
     return $this->redirect('/staff/enrollments');
-  }
+}
 
-  public function drop(Request $request, $id) {
-    $this->enrollmentRepo->updateStatus($id, 'dropped');
+/**
+ * Drop Enrollment
+ */
+public function drop(Request $request, $id) {
+    // Update status and return the enrollment object
+    $enrollment = $this->enrollmentRepo->updateStatus($id, 'dropped');
+
+    if ($enrollment) {
+        // Pass the object, consistent with approve()
+        $this->enrollmentRepo->sendDroppedEmail($enrollment);
+    }
+
     $_SESSION['success'] = "Enrollment has been dropped.";
     return $this->redirect('/staff/enrollments');
-  }
+}
 
   public function announceEmail(Request $request) {
     try {

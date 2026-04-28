@@ -37,7 +37,7 @@
             <div class="input-group">
                 <input type="password" name="password" id="password" class="form-control form-control-lg" placeholder="Enter new password" required autofocus maxlength="30" oninput="validateLength(this, 'userHint')">
                 <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password', this)">
-                    Show
+                    <i class="bi bi-eye"></i> Show
                 </button>
             </div>
             <small id="userHint" class="text-danger d-none">Must be 6-30 characters.</small>
@@ -48,7 +48,7 @@
             <div class="input-group">
                 <input type="password" name="confirm_password" id="confirm_password" class="form-control form-control-lg" placeholder="Confirm new password" required maxlength="30" oninput="validateLength(this, 'passHint')">
                 <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_password', this)">
-                    Show
+                   <i class="bi bi-eye"></i> Show
                 </button>
             </div>
             <small id="passHint" class="text-danger d-none">Must be 6-30 characters.</small>
@@ -87,10 +87,12 @@ function togglePassword(inputId, button) {
     
     if (input.type === "password") {
         input.type = "text";
-        icon.classList.replace('bi-eye', 'bi-eye-slash');
+        button.innerText = "Hide"; // Update text
+        if (icon) icon.classList.replace('bi-eye', 'bi-eye-slash');
     } else {
         input.type = "password";
-        icon.classList.replace('bi-eye-slash', 'bi-eye');
+        button.innerText = "Show"; // Update text
+        if (icon) icon.classList.replace('bi-eye-slash', 'bi-eye');
     }
 }
   function validateLength(input, hintId) {

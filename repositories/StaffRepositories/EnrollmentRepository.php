@@ -264,7 +264,136 @@ class EnrollmentRepository extends Repository{
       } catch (\Exception $e) {
           Logger::log("Failed to send approval email to {$user->email}: " . $e->getMessage());
       }
-      }
+    }
+   public function sendRejectionEmail($enrollment) {
+    // No need to call Enrollment::find($id) anymore!
+    $user = $enrollment->user;
+    if (!$user?->email) return;
+
+    $reason = $enrollment->staff_comments ?? 'No specific reason provided.';
+
+    $client = new \Google\Client();
+    $client->setAuthConfig(BASE_PATH . '/credentials.json');
+    $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
+    
+    $service = new \Google\Service\Gmail($client);
+
+    $subject = "Enrollment Application Update - The University of Manila";
+    $baseUrl = 'http://enrollment.great-site.net';
+    $logoPath = $baseUrl . '/static/images/UMLOGO.jpg';
+
+    $messageBody = "
+    <html>
+    <body style='font-family: sans-serif; color: #333; line-height: 1.6;'>
+        <div style='max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;'>
+            <div style='background-color: white; padding: 30px 20px; text-align: center; border-bottom: 3px solid #800000;'>
+                <img src='{$logoPath}' alt='University Logo' style='width: 80px; height: auto; margin-bottom: 10px;'>
+                <h2 style='color: #800000; margin: 0;'>The University of Manila</h2>
+                <p style='color: #777; margin: 5px 0;'>Office of Admissions</p>
+            </div>
+
+            <div style='padding: 30px;'>
+                <p>Hello <strong>{$user->full_name}</strong>,</p>
+                <p>Thank you for your interest in enrolling for the <strong>{$enrollment->period->acad_year} {$enrollment->period->semester}</strong>.</p>
+                
+                <p>After careful review, we regret to inform you that your enrollment application has been <strong>REJECTED</strong> for the following reason:</p>
+                
+                <div style='background-color: #fff4f4; border-left: 4px solid #cc0000; padding: 15px; margin: 20px 0; color: #333;'>
+                    <strong>Remarks:</strong> {$reason}
+                </div>
+
+                <p>If you have any questions regarding this decision, please visit the Admissions Office or reply to this inquiry through our official channels.</p>
+            </div>
+
+            <div style='background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
+                This is an automated notification. Please do not reply directly to this email.<br>
+                &copy; " . date('Y') . " The University of Manila
+            </div>
+        </div>
+    </body>
+    </html>";
+
+    $strRawMessage = "To: {$user->email}\r\n";
+    $strRawMessage .= "Subject: {$subject}\r\n";
+    $strRawMessage .= "MIME-Version: 1.0\r\n";
+    $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
+    $strRawMessage .= $messageBody;
+
+    $mime = rtrim(strtr(base64_encode($strRawMessage), '+/', '-_'), '=');
+    $msg = new \Google\Service\Gmail\Message();
+    $msg->setRaw($mime);
+
+    try {
+        $service->users_messages->send("me", $msg);
+    } catch (\Exception $e) {
+        // Corrected log wording
+        Logger::log("Failed to send rejection email to {$user->email}: " . $e->getMessage());
+        die("Gmail API Error: " . $e->getMessage());
+    }
+  }
+ public function sendDroppedEmail($enrollment) {
+    // Crucial: Check if relations are loaded. If not, the email will fail silently.
+    $user = $enrollment->user;
+    if (!$user?->email) {
+        Logger::log("Dropped Email Error: User or Email not found for Enrollment ID {$enrollment->id}");
+        return;
+    }
+
+    $client = new \Google\Client();
+    $client->setAuthConfig(BASE_PATH . '/credentials.json');
+    $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
+    
+    $service = new \Google\Service\Gmail($client);
+
+    $subject = "Enrollment Application Update - The University of Manila";
+    $baseUrl = 'http://enrollment.great-site.net';
+    $logoPath = $baseUrl . '/static/images/UMLOGO.jpg';
+
+    // Fixed: Removed the stray ']' bracket below the </p> tag
+    $messageBody = "
+    <html>
+    <body style='font-family: sans-serif; color: #333; line-height: 1.6;'>
+        <div style='max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;'>
+            <div style='background-color: white; padding: 30px 20px; text-align: center; border-bottom: 3px solid #800000;'>
+                <img src='{$logoPath}' alt='University Logo' style='width: 80px; height: auto; margin-bottom: 10px;'>
+                <h2 style='color: #800000; margin: 0;'>The University of Manila</h2>
+                <p style='color: #777; margin: 5px 0;'>Office of Admissions</p>
+            </div>
+
+            <div style='padding: 30px;'>
+                <p>Hello <strong>{$user->full_name}</strong>,</p>
+                <p>Thank you for your interest in enrolling for the <strong>{$enrollment->period->acad_year} {$enrollment->period->semester}</strong>.</p>
+                
+                <p>After careful review, we regret to inform you that your enrollment application has been <strong>DROPPED</strong>.</p>
+                
+                <p>If you have any questions regarding this decision, please visit the Admissions Office or reply to this inquiry through our official channels.</p>
+            </div>
+
+            <div style='background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
+                This is an automated notification. Please do not reply directly to this email.<br>
+                &copy; " . date('Y') . " The University of Manila
+            </div>
+        </div>
+    </body>
+    </html>";
+
+    $strRawMessage = "To: {$user->email}\r\n";
+    $strRawMessage .= "Subject: {$subject}\r\n";
+    $strRawMessage .= "MIME-Version: 1.0\r\n";
+    $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
+    $strRawMessage .= $messageBody;
+
+    $mime = rtrim(strtr(base64_encode($strRawMessage), '+/', '-_'), '=');
+    $msg = new \Google\Service\Gmail\Message();
+    $msg->setRaw($mime);
+
+    try {
+        $service->users_messages->send("me", $msg);
+    } catch (\Exception $e) {
+        Logger::log("Failed to send dropped email to {$user->email}: " . $e->getMessage());
+        // Remove die() once you've confirmed it works in production
+    }
+}
       
 }
 ?>

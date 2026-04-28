@@ -1,7 +1,17 @@
 <div class="row mb-4">
   <div class="col-md-12">
     <h2>Welcome back, Staff!</h2>
-    <p class="text-muted">Here is what's happening with enrollments today, <?= date('F d, Y') ?>.</p>
+    <div class="mt-3 col">
+      <label>
+        Date Today:
+      </label>
+      <p class="text-muted"> <?= date('F d, Y') ?>.</p>
+      <label>
+        Time:
+      </label>
+      <p class="text-muted"> <?= date("h:i A") ?>.</p>
+    </div>
+    
 
     <?php foreach (['error' => 'danger', 'success' => 'success', 'info' => 'info'] as $key => $color): ?>
       <?php if (isset($_SESSION[$key])): ?>

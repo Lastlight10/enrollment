@@ -126,32 +126,44 @@
             <?php endif; ?>
 
             <?php if($p->status === 'unpaid'): ?>
-              <div class="d-grid gap-2 mb-3">
-                <button class="btn btn-outline-primary w-100 rounded-pill shadow-sm" 
-                        onclick="openQRModal('<?= $p->payment_type ?>', '<?= number_format($p->amount, 2) ?>', 'gcash')">
-                    <i class="bi bi-qr-code-scan me-1"></i> View GCASH QR
-                </button>
-
-
-              </div>
-            </button>
-              <?php if($p->proof_path): ?>
-                <div class="text-center bg-white p-2 rounded border border-info">
-                  <div class="text-info small mb-2">
-                    <i class="bi bi-hourglass-split"></i> Awaiting Verification
-                  </div>
-                  <a href="/static/images/uploads/payments/<?= $p->proof_path ?>" 
-                    target="_blank" 
-                    class="btn btn-sm btn-info text-white w-100 rounded-pill">
-                    <i class="bi bi-image"></i> View Receipt
-                  </a>
+              <?php if($e->status === 'enrolled'): ?>
+                <div class="d-grid gap-2 mb-3">
+                  <button class="btn btn-outline-primary w-100 rounded-pill shadow-sm" 
+                          onclick="openQRModal('<?= $p->payment_type ?>', '<?= number_format($p->amount, 2) ?>', 'gcash')">
+                      <i class="bi bi-qr-code-scan me-1"></i> View GCASH QR
+                  </button>
                 </div>
+
+                <?php if($p->proof_path): ?>
+                  <div class="text-center bg-white p-2 rounded border border-info">
+                    <div class="text-info small mb-2">
+                      <i class="bi bi-hourglass-split"></i> Awaiting Verification
+                    </div>
+                    <a href="/static/images/uploads/payments/<?= $p->proof_path ?>" 
+                      target="_blank" 
+                      class="btn btn-sm btn-info text-white w-100 rounded-pill">
+                      <i class="bi bi-image"></i> View Receipt
+                    </a>
+                  </div>
+                <?php else: ?>
+                  <button class="btn btn-primary w-100 rounded-pill shadow-sm" 
+                          onclick="openUploadModal(<?= $p->id ?>, '<?= $p->payment_type ?>')">
+                    <i class="bi bi-cloud-arrow-up me-1"></i> Upload Receipt
+                  </button>
+                <?php endif; ?>
+
               <?php else: ?>
-                <button class="btn btn-primary w-100 rounded-pill shadow-sm" 
-                        onclick="openUploadModal(<?= $p->id ?>, '<?= $p->payment_type ?>')">
-                  <i class="bi bi-cloud-arrow-up me-1"></i> Upload Receipt
-                </button>
+                <div class="alert alert-secondary py-2 px-3 border-0 small mb-0 rounded-4">
+                  <i class="bi bi-lock-fill me-1"></i> 
+                  Payments will be available if your enrollment is <strong>approved</strong>.
+                </div>
+                <div class="d-grid gap-2 mt-2">
+                  <button class="btn btn-light border w-100 rounded-pill text-muted small" disabled>
+                    <i class="bi bi-slash-circle"></i> Upload Disabled
+                  </button>
+                </div>
               <?php endif; ?>
+
             <?php else: ?>
               <div class="text-success small text-center fw-bold">
                 <i class="bi bi-patch-check-fill me-1"></i> PAYMENT CONFIRMED
@@ -246,6 +258,10 @@
 <script>
 function openUploadModal(id, type) {
   // FIX: Dynamically set the form action to include the payment ID
+  if (enrollmentStatus !== 'enrolled') {
+    alert("Cannot upload receipt.");
+    return;
+  }
   const form = document.getElementById('uploadForm');
   form.action = '/student/payment/upload/' + id;
 
