@@ -155,7 +155,7 @@
               <?php else: ?>
                 <div class="alert alert-secondary py-2 px-3 border-0 small mb-0 rounded-4">
                   <i class="bi bi-lock-fill me-1"></i> 
-                  Payments will be available if your enrollment is <strong>approved</strong>.
+                  Payments will be available if your enrollment is <strong>APPROVED</strong>.
                 </div>
                 <div class="d-grid gap-2 mt-2">
                   <button class="btn btn-light border w-100 rounded-pill text-muted small" disabled>

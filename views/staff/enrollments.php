@@ -207,6 +207,7 @@
             <option value="prelim">Prelim</option>
             <option value="midterm">Midterm</option>
             <option value="finals">Finals</option>
+            <option value="others">Others</option>
           </select>
         </div>
         <div class="row">
@@ -245,7 +246,7 @@
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold text-muted">REASON FOR REJECTION (Staff Only)</label>
-          <textarea name="staff_comments" class="form-control border-0 shadow-sm" rows="4" placeholder="e.g., Incomplete requirements..." required></textarea>
+          <textarea name="staff_comments" class="form-control border-0 shadow-sm" rows="4" placeholder="e.g., Incomplete requirements..." required maxlength="100"></textarea>
         </div>
       </div>
       <div class="modal-footer border-0 bg-white">
@@ -277,7 +278,7 @@
             <small>Minimum of amount of ₱1000</small>
             <div class="col-7">
               <label class="form-label x-small mb-1">Type</label>
-              <select name="fees[0][type]" class="form-select border-0 shadow-sm" required>
+              <select name="fees[0][type]" class="form-select border-0 shadow-sm" required onchange="validateUniquePayments()">
                 <option value="downpayment">Downpayment</option>
                 <option value="prelim">Prelim</option>
                 <option value="midterm">Midterm</option>
@@ -371,6 +372,15 @@
         endInput.min = minDateString;
     }
   });
+  document.getElementById('enrollForm').addEventListener('submit', function(e) {
+      const rows = document.querySelectorAll('.fee-row');
+      
+      if (rows.length < 4 || rows.length > 5) {
+          e.preventDefault(); // Stop form submission
+          alert("Invalid Fee Count: You must provide exactly 4 or 5 fee components.");
+          return false;
+      }
+  });
 
   function validateDates() {
       const startInput = document.getElementById('announceStartDate');
@@ -451,59 +461,77 @@
     rejectModalInstance.show();
   }
 
-  function addRow() {
-    const container = document.getElementById('fee-container');
+    function addRow() {
+      const container = document.getElementById('fee-container');
+      const rows = document.querySelectorAll('.fee-row');
+      
+      // Check if we already reached the limit of 5
+      if (rows.length >= 5) {
+          alert("Limit reached: You can only add a maximum of 5 fees per student.");
+          return;
+      }
 
-    const rows = document.querySelectorAll('.fee-row');
-    
-    // Add a limit of 10 rows
-    if (rows.length >= 4) {
-        alert("You can only add a maximum of 4 fees per student.");
-        return;
-    }
-    const div = document.createElement('div');
-    div.className = 'row g-2 mb-2 fee-row align-items-end';
-    
-    // Added the min, max, and oninput logic to the template below
-    div.innerHTML = `
-      <div class="col-7">
-        <select name="fees[${feeIndex}][type]" class="form-select border-0 shadow-sm" required>
-
-        <option value="prelim">Prelim</option>
-          <option value="midterm">Midterm</option>
-          <option value="finals">Finals</option>
-        </select>
-      </div>
-      <div class="col-4">
-        <input 
-          type="number" 
-          name="fees[${feeIndex}][amount]" 
-          class="form-control border-0 shadow-sm" 
-          placeholder="0.00" 
-          step="0.01" 
-          required 
-          min="0.01" 
-          max="999999"
-          oninput="if(this.value.length > 8) this.value = this.value.slice(0, 8);">
-      </div>
-      <div class="col-1 text-end">
-        <button type="button" class="btn btn-link text-danger p-0" onclick="removeRow(this)">
-          <i class="bi bi-dash-circle-fill fs-5"></i>
-        </button>
-      </div>
-    `;
-    container.appendChild(div);
-    feeIndex++;
+      const div = document.createElement('div');
+      div.className = 'row g-2 mb-2 fee-row align-items-end';
+      
+      div.innerHTML = `
+        <div class="col-7">
+          <select name="fees[${feeIndex}][type]" class="form-select border-0 shadow-sm payment-type-select" required onchange="validateUniquePayments()">
+            <option value="" disabled selected>Select Type</option>
+            <option value="prelim">Prelim</option>
+            <option value="midterm">Midterm</option>
+            <option value="finals">Finals</option>
+            <option value="others">Others</option>
+          </select>
+        </div>
+        <div class="col-4">
+          <input 
+            type="number" 
+            name="fees[${feeIndex}][amount]" 
+            class="form-control border-0 shadow-sm" 
+            placeholder="0.00" 
+            step="0.01" 
+            required 
+            min="0.01" 
+            max="999999"
+            oninput="if(this.value.length > 8) this.value = this.value.slice(0, 8);">
+        </div>
+        <div class="col-1 text-end">
+          <button type="button" class="btn btn-link text-danger p-0" onclick="removeRow(this)">
+            <i class="bi bi-dash-circle-fill fs-5"></i>
+          </button>
+        </div>
+      `;
+      container.appendChild(div);
+      feeIndex++;
+      updateLiveTotal(); // Ensure total updates when new row appears
   }
 
   function removeRow(btn) {
     const rows = document.querySelectorAll('.fee-row');
-    if (rows.length > 1) {
-      btn.closest('.fee-row').remove();
-      updateLiveTotal(); // Recalculate after removing a row
+    if (rows.length <= 4) {
+      alert("Required: You must have at least 4 fees (e.g., Downpayment + 3 Major Exams).");
+      return;
     }
+    btn.closest('.fee-row').remove();
+    updateLiveTotal();
   }
 
+  function validateUniquePayments() {
+    const selects = document.querySelectorAll('.payment-type-select');
+    const selectedValues = [];
+
+    selects.forEach(select => {
+        if (select.value === "") return; // Skip empty/placeholder values
+
+        if (selectedValues.includes(select.value)) {
+            alert("This payment type has already been added. Please select a different type.");
+            select.value = ""; // Reset the selection
+        } else {
+            selectedValues.push(select.value);
+        }
+    });
+  }
 
 function populateFilters() {
     const rows = document.querySelectorAll('#enrollmentTableBody tr:not(.no-results)');

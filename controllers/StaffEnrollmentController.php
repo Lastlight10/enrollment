@@ -88,37 +88,42 @@ class StaffEnrollmentController extends Controller {
  */
 public function reject(Request $request, $id) {
     $validated = $request->validate([
-        'staff_comments' => 'required|string|max:500'
+        'staff_comments' => 'required|string|max:100'
     ]);
 
-    // Update status and return the enrollment object
     $enrollment = $this->enrollmentRepo->updateStatus($id, 'rejected', $validated['staff_comments']);
 
     if ($enrollment) {
-        // Pass the object, consistent with approve()
-        $this->enrollmentRepo->sendRejectionEmail($enrollment);
+        // We wrap this in a try-catch in the Repo, but let's check here too
+        $result = $this->enrollmentRepo->sendRejectionEmail($enrollment);
+        
+        if ($result === true) {
+            $_SESSION['success'] = "Application rejected and email sent!";
+        } else {
+            // This will pass the Gmail error to your frontend alert
+            $_SESSION['error'] = "Status updated, but EMAIL FAILED: " . $result;
+        }
     }
 
-    $_SESSION['success'] = "Application has been rejected.";
     return $this->redirect('/staff/enrollments');
 }
+    public function drop(Request $request, $id) {
+      // Perform update and get the FRESH object back
+      $enrollment = $this->enrollmentRepo->updateStatus($id, 'dropped');
 
-/**
- * Drop Enrollment
- */
-public function drop(Request $request, $id) {
-    // Update status and return the enrollment object
-    $enrollment = $this->enrollmentRepo->updateStatus($id, 'dropped');
-
-    if ($enrollment) {
-        // Pass the object, consistent with approve()
+      if ($enrollment && $enrollment->user) {
+        $user_email = $enrollment->user->email;
+        
+        // This will now have the 'user' and 'period' relationships loaded
         $this->enrollmentRepo->sendDroppedEmail($enrollment);
+
+        $_SESSION['success'] = "Enrollment has been dropped for: {$user_email}";
+      } else {
+        $_SESSION['error'] = "Failed to drop enrollment or user not found.";
+      }
+
+      return $this->redirect('/staff/enrollments');
     }
-
-    $_SESSION['success'] = "Enrollment has been dropped.";
-    return $this->redirect('/staff/enrollments');
-}
-
   public function announceEmail(Request $request) {
     try {
       $ids = $request->input('enrollment_ids');

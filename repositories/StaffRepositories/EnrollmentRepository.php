@@ -20,18 +20,27 @@ class EnrollmentRepository extends Repository{
             ->orderBy('created_at', 'desc')
             ->get();
   }
+    public function find($id) {
+        return Enrollment::with('user')->find($id);
+    }
   
 
-  public function updateStatus($id, $status, $comments = null) {
-    $data = ['status' => $status];
-    
-    // If a comment is provided (for rejections), add it to the update array
-    if ($comments !== null) {
-        $data['staff_comments'] = $comments;
-    }
+    public function updateStatus($id, $status, $comments = null) {
+        $enrollment = Enrollment::find($id);
+        if (!$enrollment) return null;
 
-    return Enrollment::where('id', $id)->update($data);
-  }
+        $enrollment->status = $status;
+
+        // CRITICAL: Ensure this column name matches your database table exactly
+        if ($comments !== null) {
+            $enrollment->staff_comments = $comments; 
+        }
+
+        $enrollment->save();
+
+        // Reload relationships so the email has the data
+        return Enrollment::with(['user', 'period', 'course'])->find($id);
+    }
 
   public function createSinglePayment($enrollmentId, $data) {
     $enrollment = Enrollment::findOrFail($enrollmentId);
@@ -161,7 +170,7 @@ class EnrollmentRepository extends Repository{
                     <p>This is a formal notice regarding the <strong>" . strtoupper($type) . "</strong> payment schedule for the <strong>{$active->acad_year} {$active->semester}</strong> period.</p>
                     
                     <div style='background-color: #f8f9fa; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0;'>
-                        <p style='margin: 0;'><strong>Period:</strong> " . strtoupper($type) . "</p>
+                        <p style='margin: 0;'><strong>Type:</strong> " . strtoupper($type) . "</p>
                         <p style='margin: 0;'><strong>Start Date:</strong> {$formattedStart}</p>
                         <p style='margin: 0;'><strong>End Date:</strong> {$formattedEnd}</p>
                     </div>
@@ -249,6 +258,7 @@ class EnrollmentRepository extends Repository{
       </body>
       </html>";
 
+      $strRawMessage = "From: The University of Manila <recon21342@gmail.com>\r\n";
       $strRawMessage = "To: {$user->email}\r\n";
       $strRawMessage .= "Subject: {$subject}\r\n";
       $strRawMessage .= "MIME-Version: 1.0\r\n";
@@ -270,8 +280,10 @@ class EnrollmentRepository extends Repository{
     $user = $enrollment->user;
     if (!$user?->email) return;
 
-    $reason = $enrollment->staff_comments ?? 'No specific reason provided.';
-
+    $reason = !empty($enrollment->staff_comments) 
+                  ? $enrollment->staff_comments 
+                  : 'No specific reason provided.';
+                  
     $client = new \Google\Client();
     $client->setAuthConfig(BASE_PATH . '/credentials.json');
     $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
@@ -312,8 +324,8 @@ class EnrollmentRepository extends Repository{
         </div>
     </body>
     </html>";
-
-    $strRawMessage = "To: {$user->email}\r\n";
+    $strRawMessage = "From: The University of Manila <recon21342@gmail.com>\r\n";
+    $strRawMessage .= "To: {$user->email}\r\n";
     $strRawMessage .= "Subject: {$subject}\r\n";
     $strRawMessage .= "MIME-Version: 1.0\r\n";
     $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
@@ -325,10 +337,12 @@ class EnrollmentRepository extends Repository{
 
     try {
         $service->users_messages->send("me", $msg);
+        return true; // Explicitly return true on success
+    } catch (\Google\Service\Exception $e) {
+        $errorDetails = json_decode($e->getMessage(), true);
+        return "Gmail API Error: " . ($errorDetails['error']['message'] ?? 'Unknown API Error');
     } catch (\Exception $e) {
-        // Corrected log wording
-        Logger::log("Failed to send rejection email to {$user->email}: " . $e->getMessage());
-        die("Gmail API Error: " . $e->getMessage());
+        return "General Error: " . $e->getMessage();
     }
   }
  public function sendDroppedEmail($enrollment) {
@@ -376,8 +390,8 @@ class EnrollmentRepository extends Repository{
         </div>
     </body>
     </html>";
-
-    $strRawMessage = "To: {$user->email}\r\n";
+    $strRawMessage = "From: The Univertsity of Manila <recon21342@gmail.com>\r\n";
+    $strRawMessage .= "To: {$user->email}\r\n";
     $strRawMessage .= "Subject: {$subject}\r\n";
     $strRawMessage .= "MIME-Version: 1.0\r\n";
     $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
@@ -390,8 +404,8 @@ class EnrollmentRepository extends Repository{
     try {
         $service->users_messages->send("me", $msg);
     } catch (\Exception $e) {
-        Logger::log("Failed to send dropped email to {$user->email}: " . $e->getMessage());
-        // Remove die() once you've confirmed it works in production
+       Logger::log("Gmail Error: " . $e->getMessage());
+        return $e->getMessage();
     }
 }
       

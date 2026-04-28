@@ -32,6 +32,30 @@
   <?php unset($_SESSION['info']); ?>
 <?php endif; ?>
 
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="small fw-bold text-muted">FILTER BY ACADEMIC YEAR</label>
+        <div class="input-group shadow-sm">
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+          <input type="text" id="yearSearch" class="form-control border-start-0 ps-0" placeholder="e.g. 2025..." onkeyup="filterPeriods()" maxlength="9">
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <label class="small fw-bold text-muted">FILTER BY SEMESTER</label>
+        <select id="semesterFilter" class="form-select shadow-sm" onchange="filterPeriods()">
+          <option value="">All Semesters</option>
+          <option value="1st Semester">1st Semester</option>
+          <option value="2nd Semester">2nd Semester</option>
+          <option value="Summer">Summer</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="card shadow-sm">
   <div class="card-body p-0">
     <table class="table table-hover mb-0">
@@ -43,16 +67,17 @@
           <th class="text-center">Actions</th>
         </tr>
       </thead>
-      <tbody>
+
+      <tbody id="periodTableBody">
         <?php if(empty($periods)): ?>
-          <tr>
+          <tr id="empty-row">
             <td colspan="4" class="text-center py-4 text-muted">No academic periods found.</td>
           </tr>
         <?php else: ?>
           <?php foreach($periods as $period): ?>
-            <tr>
-              <td class="ps-3 fw-bold"><?= htmlspecialchars($period->acad_year) ?></td>
-              <td><?= htmlspecialchars($period->semester) ?></td>
+            <tr class="period-row">
+              <td class="ps-3 fw-bold acad-year-cell"><?= htmlspecialchars($period->acad_year) ?></td>
+              <td class="semester-cell"><?= htmlspecialchars($period->semester) ?></td>
               <td>
                 <?php if($period->is_active): ?>
                   <span class="badge bg-success"><i class="bi bi-check-circle"></i> Active</span>
@@ -74,6 +99,7 @@
           <?php endforeach; ?>
         <?php endif; ?>
       </tbody>
+
     </table>
   </div>
 </div>
@@ -180,4 +206,40 @@
       window.location.href = '/staff/academic_periods/delete/' + id;
     }
   }
+  function filterPeriods() {
+    const yearInput = document.getElementById('yearSearch').value.toLowerCase().trim();
+    const semesterInput = document.getElementById('semesterFilter').value;
+    const rows = document.querySelectorAll('.period-row');
+    
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const yearText = row.querySelector('.acad-year-cell').innerText.toLowerCase();
+        const semesterText = row.querySelector('.semester-cell').innerText;
+
+        const matchesYear = yearText.includes(yearInput);
+        const matchesSemester = semesterInput === "" || semesterText === semesterInput;
+
+        if (matchesYear && matchesSemester) {
+            row.style.display = "";
+            visibleCount++;
+        } else {
+            row.style.display = "none";
+        }
+    });
+
+    // Optional: Handle "No Results" row
+    let noResultsMsg = document.getElementById('no-filter-results');
+    if (visibleCount === 0) {
+        if (!noResultsMsg) {
+            const tbody = document.getElementById('periodTableBody');
+            const tr = document.createElement('tr');
+            tr.id = 'no-filter-results';
+            tr.innerHTML = `<td colspan="4" class="text-center py-4 text-muted">No academic periods match your search.</td>`;
+            tbody.appendChild(tr);
+        }
+    } else if (noResultsMsg) {
+        noResultsMsg.remove();
+    }
+}
 </script>

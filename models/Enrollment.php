@@ -14,7 +14,8 @@ class Enrollment extends Model {
     'grade_year',
     'id_number',
     'scholar_type',
-    'status'
+    'status', 
+    'staff_comments',
   ];
   public function payments() {
     return $this->hasMany(Payment::class);

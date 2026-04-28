@@ -5,6 +5,41 @@
       <i class="bi bi-plus-lg"></i> New Enrollment
     </a>
   </div>
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-2">
+          <label class="small fw-bold text-muted">REFERENCE #</label>
+          <input type="text" id="filterRef" class="form-control shadow-sm" placeholder="Ex: 123456" onkeyup="filterEnrollments()" maxlength="6">
+        </div>
+
+        <div class="col-md-2">
+          <label class="small fw-bold text-muted">COURSE</label>
+          <select id="filterCourse" class="form-select shadow-sm" onchange="filterEnrollments()">
+            <option value="">All Courses</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="small fw-bold text-muted">STATUS</label>
+          <select id="filterStatus" class="form-select shadow-sm" onchange="filterEnrollments()">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="enrolled">Enrolled</option>
+            <option value="rejected">Rejected</option>
+            <option value="dropped">Dropped</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="small fw-bold text-muted">ACADEMIC PERIOD/SEM</label>
+          <select id="filterPeriod" class="form-select shadow-sm" onchange="filterEnrollments()">
+            <option value="">All Periods</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <?php if(count($enrollments) > 0): ?>
     <div class="card border-0 shadow-sm d-none d-md-block">
@@ -22,7 +57,7 @@
                 <th class="text-center">Action</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="enrollmentTableBody">
               <?php foreach($enrollments as $en): ?>
               <tr>
                 <td class="ps-4">
@@ -42,11 +77,15 @@
                       <?php endif; ?>
                   </div>
               </td>
-                <td class="ps-4 fw-bold">#<?= $en->id ?></td>
+                <td class="ps-4 fw-bold searchable-ref">#<?= $en->id ?></td>
                 <td><?= htmlspecialchars($en->course->course_code ?? 'N/A') ?></td>
                 <td>
-                  <div class="fw-bold text-dark"><?= htmlspecialchars($en->period->acad_year ?? 'N/A') ?></div>
-                  <div class="small text-muted"><?= htmlspecialchars($en->period->semester ?? '') ?></div>
+                    <div class="fw-bold text-dark"><?= htmlspecialchars($en->period->acad_year ?? 'N/A') ?></div>
+                    <div class="small text-muted"><?= htmlspecialchars($en->period->semester ?? '') ?></div>
+                    
+                    <span class="d-none searchable-period">
+                        <?= htmlspecialchars(($en->period->acad_year ?? '') . ' ' . ($en->period->semester ?? '')) ?>
+                    </span>
                 </td>
                 <td>
                   <span class="badge rounded-pill px-3 <?= $en->status === 'enrolled' ? 'badge-status-enrolled' : 'badge-status-pending' ?>">
@@ -121,3 +160,61 @@
     </div>
   <?php endif; ?>
 </div>
+<script>
+ function filterEnrollments() {
+    // Get values safely
+    const refInput = document.getElementById('filterRef')?.value.toLowerCase() || "";
+    const nameInput = document.getElementById('enrollmentSearch')?.value.toLowerCase() || "";
+    const courseSelect = document.getElementById('filterCourse')?.value || "";
+    const statusSelect = document.getElementById('filterStatus')?.value.toLowerCase() || "";
+    const periodSelect = document.getElementById('filterPeriod')?.value || "";
+
+    const rows = document.querySelectorAll('#enrollmentTableBody tr');
+
+    rows.forEach(row => {
+        // 1. Reference # (from the ID column)
+        const refText = row.querySelector('.searchable-ref')?.innerText.replace('#', '').toLowerCase() || "";
+        
+        // 2. Course Code
+        const courseCode = row.querySelector('td:nth-child(3)')?.innerText.toLowerCase() || "";
+        
+        // 3. Status
+        const statusText = row.querySelector('.badge')?.innerText.toLowerCase() || "";
+        
+        // 4. Period (from our hidden span)
+        const periodText = row.querySelector('.searchable-period')?.innerText.trim() || "";
+
+        // Logic: Should this row be shown?
+        const matchesRef = refText.includes(refInput);
+        const matchesName = courseCode.includes(nameInput); // Using this as a secondary search
+        const matchesCourse = courseSelect === "" || courseCode.toUpperCase() === courseSelect.toUpperCase();
+        const matchesStatus = statusSelect === "" || statusText === statusSelect;
+        const matchesPeriod = periodSelect === "" || periodText === periodSelect;
+
+        if (matchesRef && matchesName && matchesCourse && matchesStatus && matchesPeriod) {
+            row.style.setProperty('display', '', 'important');
+        } else {
+            row.style.setProperty('display', 'none', 'important');
+        }
+    });
+}
+
+// Call this once on page load to fill the dropdowns dynamically
+document.addEventListener('DOMContentLoaded', () => {
+    const periodSet = new Set();
+    const courseSet = new Set();
+    
+    document.querySelectorAll('.searchable-period').forEach(el => periodSet.add(el.innerText.trim()));
+    document.querySelectorAll('#enrollmentTableBody tr td:nth-child(3)').forEach(el => courseSet.add(el.innerText.trim()));
+
+    const periodSelect = document.getElementById('filterPeriod');
+    periodSet.forEach(p => {
+        if(p) periodSelect.innerHTML += `<option value="${p}">${p}</option>`;
+    });
+
+    const courseSelect = document.getElementById('filterCourse');
+    courseSet.forEach(c => {
+        if(c) courseSelect.innerHTML += `<option value="${c}">${c}</option>`;
+    });
+});
+</script>
