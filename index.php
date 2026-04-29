@@ -74,6 +74,10 @@ $router->group('/staff', function($router) {
     $router->post('/update/{id}', 'Controllers\SubjectController@update');
     $router->get('/delete/{id}', 'Controllers\SubjectController@delete');
   });
+  $router->group('/payments', function($router) {
+    $router->get('', 'Controllers\PaymentController@payments');
+    $router->get('/print_report', 'Controllers\PaymentController@downloadReceipt');
+  });
 
   // Enrollment & Billing Management
  $router->group('/enrollments', function($router) {
@@ -90,6 +94,8 @@ $router->group('/staff', function($router) {
     $router->post('/approve/{id}', 'Controllers\StaffEnrollmentController@approve');
     $router->post('/drop/{id}', 'Controllers\StaffEnrollmentController@drop');
     $router->post('/add-payment/{id}', 'Controllers\StaffEnrollmentController@addPayment');
+
+    
 
     $router->post('/payments/verify/{id}', 'Controllers\StaffEnrollmentController@verifyPayment');
     $router->get('/print/pdf/{id}', 'Controllers\StaffEnrollmentController@downloadPdf');

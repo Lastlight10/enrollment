@@ -12,6 +12,7 @@ use App\Repositories\UserAccounts\UserRepository;
 use App\Repositories\StaffRepositories\CourseRepository;
 use Exception;
 
+
 class StaffController extends Controller
 {
   private $userRepo;
@@ -38,6 +39,7 @@ class StaffController extends Controller
       
       // Payment Statistics
       $paidPayments = Payment::where('status', 'paid')->count();
+      $unverifiedPayments = Payment::where('status', 'need_verification')->count();
       $unpaidPayments = Payment::where('status', 'unpaid')->count();
       $totalRevenue = Payment::where('status', 'paid')->sum('amount');
 
@@ -52,10 +54,17 @@ class StaffController extends Controller
           'activeCount'       => $activeStudents,
           'pendingCount'      => $pendingEnrollments,
           'paidCount'         => $paidPayments,
+          'unverifiedCount'   => $unverifiedPayments,
           'unpaidCount'       => $unpaidPayments,
           'totalRevenue'      => $totalRevenue,
           'recentEnrollments' => $recent
       ]);
+  }
+  public function payments()
+  {
+    return $this->staffView('staff/payments', [
+      'title' => 'Manage Payments',
+    ]);
   }
 
   public function user_accounts()

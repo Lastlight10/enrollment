@@ -49,6 +49,11 @@
             </a>
           </li>
           <li class="nav-item">
+            <a href="/staff/payments" class="nav-link <?= ($title === 'Manage Payments') ? 'active' : '' ?>">
+              Manage Payments
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="/staff/courses" class="nav-link <?= ($title === 'Manage Courses') ? 'active' : '' ?>">
               Manage Courses
             </a>

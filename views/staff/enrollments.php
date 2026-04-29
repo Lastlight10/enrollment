@@ -135,9 +135,12 @@
                 foreach($payments as $p) {
                   if($p->status === 'paid') {
                       $paidCount++;
-                  } else {
+
+                  } 
+                  elseif($p->status === 'unpaid') {
                       // Everything not 'paid' is technically 'unpaid'
                       $unpaidCount++;
+                  }else{
                       
                       // But if it has a pending proof, we increment the verify counter
                       if(in_array($p->status, ['need_verification', 'waiting'])) {

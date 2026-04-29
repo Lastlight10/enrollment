@@ -469,7 +469,7 @@ public function sendPaymentUpdateEmail($payment, $status, $remarks = '') {
     }
 
     $messageBody .= "
-                <p style='margin-top: 25px;'>Best regards,<br><strong>University Billing Team</strong></p>
+                <p style='margin-top: 25px;'>Best regards,<br><strong>The University of Manila</strong></p>
             </div>
 
             <div style='background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #777;'>

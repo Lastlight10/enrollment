@@ -57,9 +57,15 @@
       <h4 class="mb-0 text-success"><?= number_format($paidCount) ?></h4>
     </div>
   </div>
+   <div class="col-md-4">
+    <div class="card border-0 shadow-sm p-3 border-start border-info border-4">
+      <h6 class="text-muted small uppercase fw-bold">Needs Verification</h6>
+      <h4 class="mb-0 text-success"><?= number_format($unverifiedCount) ?></h4>
+    </div>
+  </div>
   <div class="col-md-4">
     <div class="card border-0 shadow-sm p-3 border-start border-danger border-4">
-      <h6 class="text-muted small uppercase fw-bold">Unverified Payments</h6>
+      <h6 class="text-muted small uppercase fw-bold">No Payments</h6>
       <h4 class="mb-0 text-danger"><?= number_format($unpaidCount) ?></h4>
     </div>
   </div>
