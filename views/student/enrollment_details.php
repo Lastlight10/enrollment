@@ -126,7 +126,7 @@
             <?php endif; ?>
 
             <?php if($p->status === 'unpaid'): ?>
-              <?php if($e->status === 'enrolled'): ?>
+              <?php if(strtolower($e->status) === 'enrolled'): ?>
                 <div class="d-grid gap-2 mb-3">
                   <button class="btn btn-outline-primary w-100 rounded-pill shadow-sm" 
                           onclick="openQRModal('<?= $p->payment_type ?>', '<?= number_format($p->amount, 2) ?>', 'gcash')">
@@ -256,25 +256,28 @@
     </div>
 </div>
 <script>
+const enrollmentStatus = '<?= strtolower(trim($e->status)) ?>';
+
 function openUploadModal(id, type) {
-  // FIX: Dynamically set the form action to include the payment ID
+  // Now this check will actually work
   if (enrollmentStatus !== 'enrolled') {
-    alert("Cannot upload receipt.");
+    alert("Cannot upload receipt. Current status: " + enrollmentStatus);
     return;
   }
+  
   const form = document.getElementById('uploadForm');
   form.action = '/student/payment/upload/' + id;
 
   document.getElementById('modal_payment_id').value = id;
   document.getElementById('modal_payment_type').innerText = type.toUpperCase();
   
-  // Reset preview
   const preview = document.getElementById('img-preview');
   preview.classList.add('d-none');
   preview.src = '';
   
   new bootstrap.Modal(document.getElementById('uploadModal')).show();
 }
+
 function openQRModal(type, amount, provider) {
     document.getElementById('qr-payment-type').innerText = type.toUpperCase();
     document.getElementById('qr-amount').innerText = amount;
