@@ -12,11 +12,11 @@ use App\Repositories\StaffRepositories\AcademicPeriodRepository;
 
 class EnrollmentRepository extends Repository{
   public function findById($id) {
-    return Enrollment::with(['user', 'course', 'subjects', 'payments'])->findOrFail($id);
-  }
+        return Enrollment::with(['user', 'course', 'period', 'payments'])->find($id);
+    }
   public function all() {
     // Replace Enrollment::all() with this:
-    return Enrollment::with(['user', 'course', 'period'])
+    return Enrollment::with(['user', 'course', 'period', 'payments'])
             ->orderBy('created_at', 'desc')
             ->get();
   }
@@ -75,6 +75,11 @@ class EnrollmentRepository extends Repository{
   {
     return \Models\User::findOrFail($userId)->payments;
   }
+   public function getPaymentById(int $id)
+    {
+        return \Models\Payment::with(['enrollment.user', 'enrollment.period'])->findOrFail($id);
+    }
+  
   public function approveWithFees(int $id, array $fees) {
     return DB::transaction(function () use ($id, $fees) {
       $enrollment = Enrollment::findOrFail($id);
@@ -406,6 +411,93 @@ class EnrollmentRepository extends Repository{
     } catch (\Exception $e) {
        Logger::log("Gmail Error: " . $e->getMessage());
         return $e->getMessage();
+    }
+}
+public function sendPaymentUpdateEmail($payment, $status, $remarks = '') {
+    // 1. Ensure relations are loaded (Payment -> Enrollment -> User)
+    $enrollment = $payment->enrollment;
+    $user = $enrollment?->user;
+
+    if (!$user?->email) {
+        Logger::log("Payment Email Error: User or Email not found for Payment ID {$payment->id}");
+        return;
+    }
+
+    // 2. Setup Gmail Client
+    $client = new \Google\Client();
+    $client->setAuthConfig(BASE_PATH . '/credentials.json');
+    $client->setAccessToken(json_decode(file_get_contents(BASE_PATH . '/token.json'), true));
+    $service = new \Google\Service\Gmail($client);
+
+    // 3. Dynamic Content based on Status
+    $isApproved = ($status === 'paid');
+    $subject = $isApproved ? "Payment Verified" : "Action Required: Payment Proof Rejected";
+    $statusText = $isApproved ? "VERIFIED" : "REJECTED";
+    $statusColor = $isApproved ? "#198754" : "#dc3545"; // Green for success, Red for danger
+    
+    $baseUrl = 'http://enrollment.great-site.net';
+    $logoPath = $baseUrl . '/static/images/UMLOGO.jpg';
+    $paymentType = ucfirst($payment->type);
+
+    // 4. Construct Message Body
+    $messageBody = "
+    <html>
+    <body style='font-family: sans-serif; color: #333; line-height: 1.6;'>
+        <div style='max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;'>
+            <div style='background-color: white; padding: 30px 20px; text-align: center; border-bottom: 3px solid #800000;'>
+                <img src='{$logoPath}' alt='University Logo' style='width: 80px; height: auto; margin-bottom: 10px;'>
+                <h2 style='color: #800000; margin: 0;'>The University of Manila</h2>
+                <p style='color: #777; margin: 5px 0;'>Office of the Registrar</p>
+            </div>
+
+            <div style='padding: 30px;'>
+                <p>Hello <strong>{$user->full_name}</strong>,</p>
+                <p>This is to notify you regarding your payment for: <strong>{$paymentType}</strong>.</p>
+                
+                <div style='background-color: #f8f9fa; border-left: 4px solid {$statusColor}; padding: 15px; margin: 20px 0;'>
+                    <p style='margin: 0; font-weight: bold;'>Status: <span style='color: {$statusColor};'>{$statusText}</span></p>
+                    <p style='margin: 5px 0 0 0;'>Amount: ₱" . number_format($payment->amount, 2) . "</p>
+                </div>";
+
+    if (!$isApproved) {
+        $messageBody .= "
+                <p style='color: #dc3545;'><strong>Reason for Rejection:</strong><br>{$remarks}</p>
+                <p>Please log in to the portal and re-upload a valid proof of payment to proceed with your enrollment.</p>";
+    } else {
+        $messageBody .= "
+                <p>Your payment has been successfully recorded. You may now check your updated account balance in the student portal.</p>";
+    }
+
+    $messageBody .= "
+                <p style='margin-top: 25px;'>Best regards,<br><strong>University Billing Team</strong></p>
+            </div>
+
+            <div style='background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
+                This is an automated notification regarding your enrollment at The University of Manila.<br>
+                &copy; " . date('Y') . " The University of Manila
+            </div>
+        </div>
+    </body>
+    </html>";
+
+    // 5. Prepare Gmail Raw Message
+    $strRawMessage = "From: The University of Manila <recon21342@gmail.com>\r\n";
+    $strRawMessage .= "To: {$user->email}\r\n";
+    $strRawMessage .= "Subject: {$subject} - {$paymentType}\r\n";
+    $strRawMessage .= "MIME-Version: 1.0\r\n";
+    $strRawMessage .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
+    $strRawMessage .= $messageBody;
+
+    $mime = rtrim(strtr(base64_encode($strRawMessage), '+/', '-_'), '=');
+    $msg = new \Google\Service\Gmail\Message();
+    $msg->setRaw($mime);
+
+    try {
+        $service->users_messages->send("me", $msg);
+        return true;
+    } catch (\Exception $e) {
+        Logger::log("Gmail Payment Email Error: " . $e->getMessage());
+        return false;
     }
 }
       

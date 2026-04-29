@@ -93,7 +93,9 @@ class EnrollmentRepository extends Repository{
   {
     return Payment::where('id', $paymentId)->update([
       'proof_path' => $fileName,
-      'status' => 'unpaid' // Ensure it stays unpaid until staff verifies
+      'status'     => 'need_verification',
+      'remarks'    => null, 
+      'updated_at' => date('Y-m-d H:i:s') 
     ]);
   }
   // In AcademicPeriodRepository.php

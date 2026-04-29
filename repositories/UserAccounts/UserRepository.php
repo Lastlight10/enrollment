@@ -266,7 +266,8 @@ class UserRepository extends Repository
       </div>
     </body>
     </html>";
-
+    
+    $strRawMessage = "From: The University of Manila <recon21342@gmail.com>\r\n";
     $strRawMessage = "To: {$user->email}\r\n";
     $strRawMessage .= "Subject: Welcome! Your Account is Now Active\r\n";
     $strRawMessage .= "MIME-Version: 1.0\r\n";

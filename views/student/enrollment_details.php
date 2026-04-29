@@ -1,4 +1,30 @@
 <link rel="stylesheet" href="/static/css/student/enrollment_details.css">
+<?php if (isset($_SESSION['error'])): ?>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <?= $_SESSION['error'] ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <?php unset($_SESSION['error']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['success'])): ?>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i>
+    <?= $_SESSION['success'] ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <?php unset($_SESSION['success']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['info'])): ?>
+  <div class="alert alert-info alert-dismissible fade show" role="alert">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    <?= $_SESSION['info'] ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <?php unset($_SESSION['info']); ?>
+<?php endif; ?>
 <div class="container py-3">
   <div class="mb-4 d-flex justify-content-between align-items-center">
     <div>
@@ -110,66 +136,68 @@
         </div>
         <div class="card-body">
           <?php foreach($e->payments as $p): ?>
-          <div class="p-3 border rounded mb-3 <?= $p->status === 'paid' ? 'border-success bg-success-subtle' : 'bg-light' ?>">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="badge bg-white text-dark border shadow-sm small"><?= strtoupper($p->payment_type) ?></span>
-              <span class="small fw-bold <?= $p->status === 'paid' ? 'text-success' : 'text-muted' ?>">
-                <?= strtoupper($p->status) ?>
-              </span>
-            </div>
-            <h4 class="fw-bold mb-3 text-dark">₱<?= number_format($p->amount, 2) ?></h4>
-            
-            <?php if($p->remarks): ?>
-              <div class="small text-danger mb-2">
-                <i class="bi bi-exclamation-triangle-fill"></i> <?= htmlspecialchars($p->remarks) ?>
+            <?php 
+              $cardBg = 'bg-light';
+              if ($p->status === 'paid') $cardBg = 'border-success bg-success-subtle';
+              if ($p->status === 'need_verification') $cardBg = 'border-info bg-info-subtle';
+            ?>
+
+            <div class="p-3 border rounded mb-3 <?= $cardBg ?>">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-white text-dark border shadow-sm small"><?= strtoupper($p->payment_type) ?></span>
+                <span class="small fw-bold 
+                  <?= $p->status === 'paid' ? 'text-success' : ($p->status === 'need_verification' ? 'text-info' : 'text-muted') ?>">
+                  <?= $p->status === 'need_verification' ? 'PENDING VERIFICATION' : strtoupper($p->status) ?>
+                </span>
               </div>
-            <?php endif; ?>
-
-            <?php if($p->status === 'unpaid'): ?>
-              <?php if(strtolower($e->status) === 'enrolled'): ?>
-                <div class="d-grid gap-2 mb-3">
-                  <button class="btn btn-outline-primary w-100 rounded-pill shadow-sm" 
-                          onclick="openQRModal('<?= $p->payment_type ?>', '<?= number_format($p->amount, 2) ?>', 'gcash')">
-                      <i class="bi bi-qr-code-scan me-1"></i> View GCASH QR
-                  </button>
-                </div>
-
-                <?php if($p->proof_path): ?>
-                  <div class="text-center bg-white p-2 rounded border border-info">
-                    <div class="text-info small mb-2">
-                      <i class="bi bi-hourglass-split"></i> Awaiting Verification
-                    </div>
-                    <a href="/static/images/uploads/payments/<?= $p->proof_path ?>" 
-                      target="_blank" 
-                      class="btn btn-sm btn-info text-white w-100 rounded-pill">
-                      <i class="bi bi-image"></i> View Receipt
-                    </a>
-                  </div>
-                <?php else: ?>
-                  <button class="btn btn-primary w-100 rounded-pill shadow-sm" 
-                          onclick="openUploadModal(<?= $p->id ?>, '<?= $p->payment_type ?>')">
-                    <i class="bi bi-cloud-arrow-up me-1"></i> Upload Receipt
-                  </button>
-                <?php endif; ?>
-
-              <?php else: ?>
-                <div class="alert alert-secondary py-2 px-3 border-0 small mb-0 rounded-4">
-                  <i class="bi bi-lock-fill me-1"></i> 
-                  Payments will be available if your enrollment is <strong>APPROVED</strong>.
-                </div>
-                <div class="d-grid gap-2 mt-2">
-                  <button class="btn btn-light border w-100 rounded-pill text-muted small" disabled>
-                    <i class="bi bi-slash-circle"></i> Upload Disabled
-                  </button>
+              
+              <h4 class="fw-bold mb-3 text-dark">₱<?= number_format($p->amount, 2) ?></h4>
+              
+              <?php if($p->remarks): ?>
+                <div class="small text-danger mb-2 p-2 bg-white rounded border-start border-danger border-3">
+                  <i class="bi bi-exclamation-circle-fill"></i> <strong>Note:</strong> <?= htmlspecialchars($p->remarks) ?>
                 </div>
               <?php endif; ?>
 
-            <?php else: ?>
-              <div class="text-success small text-center fw-bold">
-                <i class="bi bi-patch-check-fill me-1"></i> PAYMENT CONFIRMED
-              </div>
-            <?php endif; ?>
-          </div>
+              <?php if($p->status === 'paid'): ?>
+                <div class="text-success small text-center fw-bold">
+                  <i class="bi bi-patch-check-fill me-1"></i> PAYMENT CONFIRMED
+                </div>
+
+              <?php elseif($p->status === 'need_verification' || ($p->status === 'unpaid' && $p->proof_path)): ?>
+                <div class="text-center bg-white p-3 rounded-4 border border-info shadow-sm">
+                  <div class="text-info fw-bold small mb-2">
+                    <i class="bi bi-hourglass-split"></i> Awaiting Staff Verification
+                  </div>
+                  <div class="d-flex gap-2">
+                      <a href="/static/images/uploads/payments/<?= $p->proof_path ?>" target="_blank" class="btn btn-sm btn-outline-info w-100 rounded-pill">
+                        <i class="bi bi-eye"></i> View Sent Receipt
+                      </a>
+                      <button class="btn btn-sm btn-light border rounded-pill" onclick="openUploadModal(<?= $p->id ?>, '<?= $p->payment_type ?>')" title="Change Receipt">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                  </div>
+                </div>
+
+              <?php else: ?>
+                <?php if(strtolower($e->status) === 'enrolled'): ?>
+                  <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary w-100 rounded-pill shadow-sm mb-1" 
+                            onclick="openQRModal('<?= $p->payment_type ?>', '<?= number_format($p->amount, 2) ?>', 'gcash')">
+                        <i class="bi bi-qr-code-scan me-1"></i> View GCASH QR
+                    </button>
+                    <button class="btn btn-primary w-100 rounded-pill shadow-sm" 
+                            onclick="openUploadModal(<?= $p->id ?>, '<?= $p->payment_type ?>')">
+                      <i class="bi bi-cloud-arrow-up me-1"></i> Upload Receipt
+                    </button>
+                  </div>
+                <?php else: ?>
+                  <div class="alert alert-secondary py-2 px-3 border-0 small mb-0 rounded-4">
+                    <i class="bi bi-lock-fill me-1"></i> Available after <strong>APPROVAL</strong>.
+                  </div>
+                <?php endif; ?>
+              <?php endif; ?>
+            </div>
           <?php endforeach; ?>
         </div>
       </div>

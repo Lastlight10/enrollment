@@ -3,7 +3,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <style>
-        body { font-family: sans-serif; font-size: 11pt; color: #333; }
+        body { font-family: sans-serif; font-size: 10pt; color: #333; }
         .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
         .section-title { background: #f4f4f4; padding: 5px; font-weight: bold; margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -11,8 +11,8 @@
         th { background: #eee; }
         .text-end { text-align: right; }
         .footer { margin-top: 50px; font-size: 9pt; text-align: center; color: #777; }
-        .status-text { font-size: 9pt; font-weight: bold; text-transform: uppercase; }
-
+        .status-text { font-size: 7pt; font-weight: bold; text-transform: uppercase; }
+        .payment_text, .details{font-size: 9pt;}
         .header h4 {
             margin: 2px 0;
             font-weight: normal;
@@ -39,21 +39,24 @@
     </div>
 
     <div class="section-title">Student & Academic Information</div>
-    <p><strong> Name:</strong> <?= htmlspecialchars($e->user->first_name ?? 'N/A') ?> <?= htmlspecialchars($e->user->mid_name ?? 'N/A') ?> <?= htmlspecialchars($e->user->last_name ?? 'N/A') ?></p>
-    <p><strong>Status:</strong> <?= strtoupper(htmlspecialchars($e->status ?? 'N/A')) ?></p>
-    <table>
-        <tr>
-            <td><strong>Course:</strong> <?= htmlspecialchars($e->course?->course_name ?? $e->course_id ?? 'N/A') ?></td>
-            <td><strong>Year Level:</strong> <?= htmlspecialchars($e->grade_year ?? 'N/A') ?></td>
-        </tr>
-        <tr>
-            <td><strong>Academic Year:</strong> <?= htmlspecialchars($e->period?->acad_year ?? '') ?> <?= htmlspecialchars($e->period?->semester ?? '') ?></td>
-            <td><strong>ID Number:</strong> <?= htmlspecialchars($e->id_number ?? $e->user_id ?? 'N/A') ?></td>
-        </tr>
-    </table>
+    <div class="details">
+        <p><strong> Name:</strong> <?= htmlspecialchars($e->user->first_name ?? 'N/A') ?> <?= htmlspecialchars($e->user->mid_name ?? 'N/A') ?> <?= htmlspecialchars($e->user->last_name ?? 'N/A') ?></p>
+        <p><strong>Status:</strong> <?= strtoupper(htmlspecialchars($e->status ?? 'N/A')) ?></p>
+        <table>
+            <tr>
+                <td><strong>Course:</strong> <?= htmlspecialchars($e->course?->course_name ?? $e->course_id ?? 'N/A') ?></td>
+                <td><strong>Year Level:</strong> <?= htmlspecialchars($e->grade_year ?? 'N/A') ?></td>
+            </tr>
+            <tr>
+                <td><strong>Academic Period:</strong> <?= htmlspecialchars($e->period?->acad_year ?? '') ?> <?= htmlspecialchars($e->period?->semester ?? '') ?></td>
+                <td><strong>ID Number:</strong> <?= htmlspecialchars($e->id_number ?? $e->user_id ?? 'N/A') ?></td>
+            </tr>
+        </table>
+    </div>
+    
 
     <div class="section-title">Enrolled Subjects</div>
-    <table>
+    <table class="details">
         <thead>
             <tr>
                 <th>Code</th>
@@ -91,9 +94,23 @@
             </thead>
             <tbody>
                 <?php foreach($e->payments as $p): ?>
-                <tr>
+                <tr class="payment_text">
                     <td><?= strtoupper(htmlspecialchars($p->payment_type ?? '')) ?></td>
-                    <td class="status-text"><?= htmlspecialchars($p->status ?? '') ?></td>
+                    <td class="status-text">
+                        <?php if($p->status === 'paid'): ?>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3">
+                                <i class="bi bi-check-circle-fill me-1"></i> PAID
+                            </span>
+                        <?php elseif($p->status === 'need_verification'): ?>
+                            <span class="badge bg-info-subtle text-info border border-info-subtle px-3">
+                                <i class="bi bi-hourglass-split me-1"></i> PENDING VERIFICATION
+                            </span>
+                        <?php else: ?>
+                            <span class="badge bg-light text-muted border px-3">
+                                <?= strtoupper($p->status ?? 'UNPAID') ?>
+                            </span>
+                        <?php endif; ?>
+                    </td>
                     <td>PHP <?= number_format($p->amount ?? 0, 2) ?></td>
                     <td><?= htmlspecialchars($p->remarks ?? '') ?: 'N/A' ?></td>
                 </tr>
@@ -108,7 +125,7 @@
                 <strong>Verified by:</strong> <?= htmlspecialchars($_SESSION['user_name'] ?? 'Authorized Personnel') ?>
             </p>
         <?php endif; ?>
-        <p>This is a system-generated document. Printed on <?= date('Y-m-d H:i:s') ?></p>
+        <p>This is a system-generated document. Printed on <?= date('Y-m-d h:i A') ?></p>
     </div>
 </body>
 </html>

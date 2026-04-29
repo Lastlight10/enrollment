@@ -1,3 +1,22 @@
+
+<style>
+  .row-waiting {
+    background-color: rgba(13, 202, 240, 0.08) !important; /* Slightly stronger blue */
+    border-left: 5px solid #0dcaf0 !important;
+    transition: all 0.3s ease;
+  }
+  
+  .pulse-info {
+    box-shadow: 0 0 0 0 rgba(13, 202, 240, 0.7);
+    animation: pulse-blue 2s infinite;
+  }
+
+  @keyframes pulse-blue {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 202, 240, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(13, 202, 240, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 202, 240, 0); }
+  }
+</style>
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
     <h2 class="mb-0">Enrollment Management</h2>
@@ -72,6 +91,15 @@
         <label class="small fw-bold text-muted">DATE APPLIED</label>
         <input type="date" id="filterDate" class="form-control shadow-sm" onchange="filterEnrollments()" min="1960-01-01">
       </div>
+
+      <div class="col-md-2">
+        <label class="small fw-bold text-muted">Payments</label>
+        <select id="filterPaymentStatus" class="form-select shadow-sm" onchange="filterEnrollments()">
+          <option value="">All Statuses</option>
+          <option value="needs_verification">⚠️ Needs Verification</option>
+      </select>
+      </div>
+
     </div>
   </div>
 </div>
@@ -98,27 +126,45 @@
 
             <?php foreach($enrollments as $e): ?>
               <?php 
-                // Uses the Full Name attribute from your User model with null-safety
                 $displayName = htmlspecialchars($e->user?->full_name ?? 'Unknown Student'); 
                 $payments = $e->payments ?? [];
                 $paidCount = 0;
-                $pendingCount = 0;
+                $unpaidCount = 0;
+                $waitingCount = 0; // Reset for each row
                 
                 foreach($payments as $p) {
-                    if($p->status === 'paid') $paidCount++;
-                    if($p->status === 'unpaid' || $p->status === 'pending') $pendingCount++;
-                }
+                  if($p->status === 'paid') {
+                      $paidCount++;
+                  } else {
+                      // Everything not 'paid' is technically 'unpaid'
+                      $unpaidCount++;
+                      
+                      // But if it has a pending proof, we increment the verify counter
+                      if(in_array($p->status, ['need_verification', 'waiting'])) {
+                          $waitingCount++;
+                      }
+                  }
+              }
+              $needsAttention = $waitingCount > 0;
               ?>
-              <tr>
+              <tr class="<?= $needsAttention ? 'row-waiting' : '' ?>" data-needs-verification="<?= $needsAttention ? 'true' : 'false' ?>">
                 <td class="ps-4">
                   <div class="d-flex gap-2">
                     <div class="text-center">
-                        <span class="badge bg-success d-block mb-1" title="Paid Payments"><?= $paidCount ?></span>
-                        <small class="x-small text-uppercase">Paid</small>
+                      <span class="badge bg-success d-block mb-1 shadow-sm"><?= $paidCount ?></span>
+                      <small class="x-small text-uppercase">Paid</small>
                     </div>
+
                     <div class="text-center">
-                        <span class="badge bg-warning text-dark d-block mb-1" title="Pending Payments"><?= $pendingCount ?></span>
-                        <small class="x-small text-uppercase">Pend</small>
+                      <span class="badge <?= $needsAttention ? 'bg-info pulse-info' : 'bg-light text-muted' ?> d-block mb-1 shadow-sm">
+                        <i class="bi bi-image<?= $needsAttention ? '-fill' : '' ?> me-1"></i><?= $waitingCount ?>
+                      </span>
+                      <small class="x-small text-uppercase <?= $needsAttention ? 'text-info fw-bold' : '' ?>">Verify</small>
+                    </div>
+
+                    <div class="text-center">
+                      <span class="badge bg-light text-dark border d-block mb-1"><?= $unpaidCount ?></span>
+                      <small class="x-small text-uppercase">Unpaid</small>
                     </div>
                   </div>
                 </td>
@@ -571,10 +617,10 @@ function populateFilters() {
 }
 
 function filterEnrollments() {
-    // 1. Get all current filter values
     const searchTerm = document.getElementById('enrollmentSearch').value.toLowerCase().trim();
     const filterCourse = document.getElementById('filterCourse').value;
     const filterStatus = document.getElementById('filterStatus').value.toLowerCase();
+    const filterPayment = document.getElementById('filterPaymentStatus').value; // Updated ID
     const filterYear = document.getElementById('filterYear').value;
     const filterDateInput = document.getElementById('filterDate').value;
     const filterPeriod = document.getElementById('filterPeriod').value;
@@ -583,41 +629,43 @@ function filterEnrollments() {
     let visibleCount = 0;
 
     rows.forEach(row => {
-        // 2. Extract data from the row
-        const studentText = row.querySelector('.searchable-student').innerText.toLowerCase();
-        const courseCode = row.querySelector('td:nth-child(3) .fw-bold').innerText.trim();
-        const yearLevel = row.querySelector('td:nth-child(3) .badge').innerText.trim();
-        const status = row.querySelector('td:nth-child(6) .badge').innerText.toLowerCase().trim();
-        const periodText = row.querySelector('.searchable-period').innerText.trim();
+        const studentText = row.querySelector('.searchable-student')?.innerText.toLowerCase() || "";
+        const courseCode = row.querySelector('td:nth-child(3) .fw-bold')?.innerText.trim() || "";
+        const yearLevel = row.querySelector('td:nth-child(3) .badge')?.innerText.trim() || "";
+        const status = row.querySelector('td:nth-child(6) .badge')?.innerText.toLowerCase().trim() || "";
+        const periodText = row.querySelector('.searchable-period')?.innerText.trim() || "";
+        const hasWaiting = row.getAttribute('data-needs-verification') === 'true';
 
-        // Date Parsing Logic
-        const rowDateRaw = row.querySelector('td:nth-child(5)').innerText.trim();
+        // Date check
+        const rowDateRaw = row.querySelector('td:nth-child(5)')?.innerText.trim() || "";
         const dateObj = new Date(rowDateRaw);
-        const rowDateFormatted = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+        const rowDateFormatted = isNaN(dateObj) ? "" : `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
 
-        // 3. Perform Logical Comparison
-        // If the filter is empty/default, it automatically matches (true)
         const matchesSearch = searchTerm === "" || studentText.includes(searchTerm);
         const matchesCourse = filterCourse === "" || courseCode === filterCourse;
         const matchesStatus = filterStatus === "" || status === filterStatus;
-        const matchesYear   = filterYear === "" || yearLevel === filterYear;
-        const matchesDate   = filterDateInput === "" || rowDateFormatted === filterDateInput;
+
+        // Logic fix:
+        const matchesPayment = filterPayment === "" || 
+                              (filterPayment === "needs_verification" && hasWaiting);
+
+        const matchesYear = filterYear === "" || yearLevel === filterYear;
+        const matchesDate = filterDateInput === "" || rowDateFormatted === filterDateInput;
         const matchesPeriod = filterPeriod === "" || periodText === filterPeriod;
 
-        // 4. Final Decision: Row must satisfy ALL conditions
-        if (matchesSearch && matchesCourse && matchesStatus && matchesYear && matchesDate && matchesPeriod) {
-            row.style.display = ""; // Show
+        if (matchesSearch && matchesCourse && matchesStatus && matchesPayment && matchesYear && matchesDate && matchesPeriod) {
+            row.style.display = "";
             visibleCount++;
         } else {
-            row.style.display = "none"; // Hide
+            row.style.display = "none";
         }
     });
 
-    // 5. Handle "No results found"
+    // Toggle No Results Message
+    const tbody = document.getElementById('enrollmentTableBody');
     let noResultsMsg = document.querySelector('.no-results');
     if (visibleCount === 0) {
         if (!noResultsMsg) {
-            const tbody = document.getElementById('enrollmentTableBody');
             const tr = document.createElement('tr');
             tr.className = 'no-results';
             tr.innerHTML = `<td colspan="7" class="text-center py-5 text-muted">No applications match your filters.</td>`;
@@ -626,6 +674,6 @@ function filterEnrollments() {
     } else if (noResultsMsg) {
         noResultsMsg.remove();
     }
-}
+                    }
 </script>
 

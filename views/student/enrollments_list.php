@@ -1,3 +1,29 @@
+<?php if (isset($_SESSION['error'])): ?>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <?= $_SESSION['error'] ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <?php unset($_SESSION['error']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['success'])): ?>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i>
+    <?= $_SESSION['success'] ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <?php unset($_SESSION['success']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['info'])): ?>
+  <div class="alert alert-info alert-dismissible fade show" role="alert">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    <?= $_SESSION['info'] ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <?php unset($_SESSION['info']); ?>
+<?php endif; ?>
 <div class="container py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-custom-green">My Enrollments</h2>
@@ -77,7 +103,7 @@
                       <?php endif; ?>
                   </div>
               </td>
-                <td class="ps-4 fw-bold searchable-ref">#<?= $en->id ?></td>
+                <td class="ps-4 fw-bold searchable-ref"><?= $en->id ?></td>
                 <td><?= htmlspecialchars($en->course->course_code ?? 'N/A') ?></td>
                 <td>
                     <div class="fw-bold text-dark"><?= htmlspecialchars($en->period->acad_year ?? 'N/A') ?></div>

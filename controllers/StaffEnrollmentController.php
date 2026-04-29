@@ -146,16 +146,17 @@ public function reject(Request $request, $id) {
     return $this->redirect('/staff/enrollments');
   }
 
-  public function verifyPayment(Request $request, $id)
-  {
+  public function verifyPayment(Request $request, $id) {
     try {
-      // Validate inputs
-      $status = $request->input('status'); 
+      $status = $request->input('status');
       $remarks = $request->input('remarks');
-      
+
       if (!in_array($status, ['paid', 'unpaid'])) {
         throw new Exception("Invalid status selected.");
       }
+
+      // This now returns the Payment model with User/Enrollment data attached
+      $payment = $this->enrollmentRepo->getPaymentById($id);
 
       $this->enrollmentRepo->updatePaymentStatus($id, [
         'status'      => $status,
@@ -163,15 +164,19 @@ public function reject(Request $request, $id) {
         'verified_by' => $_SESSION['user_id']
       ]);
 
-      $_SESSION['success'] = ($status === 'paid') 
-        ? "Payment approved successfully!" 
-        : "Payment rejected with remarks.";
-          
-    } catch (Exception $e) {
-        $_SESSION['error'] = "Error: " . $e->getMessage();
-      }
+      // Now $payment->enrollment->user->email will be available for this function
+      $this->enrollmentRepo->sendPaymentUpdateEmail($payment, $status, $remarks);
 
-      return $this->redirect($_SERVER['HTTP_REFERER']);
+      $_SESSION['success'] = ($status === 'paid')
+        ? "Payment approved and student notified!"
+        : "Payment rejected and student notified.";
+
+    } catch (Exception $e) {
+      // This will catch both your custom Exception and Eloquent's ModelNotFoundException
+      $_SESSION['error'] = "Error: " . $e->getMessage();
+    }
+
+    return $this->redirect($_SERVER['HTTP_REFERER']);
   }
   
   public function downloadPdf(Request $request, $id)
