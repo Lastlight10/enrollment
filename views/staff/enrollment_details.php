@@ -154,17 +154,19 @@
         </div>
         
         <div class="d-flex justify-content-end gap-2">
-            <?php if($e->status === 'pending'): ?>
-                <button class="btn btn-outline-danger px-4" onclick="openRejectModal(<?= $e->id ?>, '<?= addslashes($e->user?->full_name ?? 'Unknown') ?>')">Reject Application</button>
-                <button class="btn btn-primary px-4 shadow-sm" onclick="openEnrollModal(<?= $e->id ?>, '<?= addslashes($e->user?->full_name ?? 'Unknown') ?>')">Proceed to Enrollment</button>
-            <?php elseif($e->status === 'enrolled'): ?>
-                <form action="/staff/enrollments/drop/<?= $e->id ?>" method="POST" onsubmit="return confirm('Are you sure you want to DROP this student?')">
-                    <button type="submit" class="btn btn-danger px-4">
-                        <i class="bi bi-person-x me-1"></i> Drop Student
-                    </button>
-                </form>
-            <?php endif; ?>
-        </div>
+          <?php if($e->status === 'pending'): ?>
+            <!-- Action buttons removed: Enrollment/Rejection must be handled elsewhere -->
+            <span class="badge bg-warning text-dark px-4 py-2 shadow-sm">
+              <i class="bi bi-clock-history me-1"></i> Application Pending
+            </span>
+          <?php elseif($e->status === 'enrolled'): ?>
+            <form action="/staff/enrollments/drop/<?= $e->id ?>" method="POST" onsubmit="return confirm('Are you sure you want to DROP this student?')">
+              <button type="submit" class="btn btn-danger px-4 shadow-sm">
+                <i class="bi bi-person-x me-1"></i> Drop Student
+              </button>
+            </form>
+          <?php endif; ?>
+      </div>
     </div>
 </div>
 

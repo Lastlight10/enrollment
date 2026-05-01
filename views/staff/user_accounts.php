@@ -63,6 +63,7 @@
     <table class="table table-hover mb-0">
       <thead class="table-dark">
         <tr>
+          <th class="d-none">ID Number</th>
           <th class="ps-3">Name</th>
           <th>Username</th>
           <th>Email</th>
@@ -74,6 +75,7 @@
       <tbody>
         <?php foreach($users as $user): ?>
           <tr class="user-row">
+            <td class="d-none"><?= htmlspecialchars($user->id_number) ?></td>
             <td class="ps-3"><?= htmlspecialchars($user->first_name . ' ' . $user->last_name) ?></td>
             <td><?= htmlspecialchars($user->username) ?></td>
             <td><?= htmlspecialchars($user->email) ?></td>
@@ -228,6 +230,11 @@
           </div>
           <div class="col-md-12" id="course_selection_container">
               <label class="form-label small fw-bold text-uppercase text-muted">Official Enrolled Course</label>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">ID Number:</label>
+                <input type="text" name="id_number" id="id_number" class="form-control"
+                  oninput="this.value = this.value.replace(/\s+/g, '')" disable>
+              </div>
               
               <div class="border rounded p-2 bg-light shadow-sm">
                   <div class="input-group input-group-sm mb-2">
@@ -373,6 +380,7 @@ function resetModalCourseFilter() {
   function editUser(user) {
     const form = document.getElementById('editForm');
     form.action = '/staff/user_accounts/update/' + user.id;
+    document.getElementById('id_number').value = user.id_number;
 
     // Standard fields
     document.getElementById('edit_first_name').value = user.first_name;
