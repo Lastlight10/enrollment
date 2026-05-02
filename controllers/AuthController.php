@@ -43,38 +43,36 @@ class AuthController extends Controller
     $this->view('login/authorize', ['title' => 'Authorize Gmail'], 'default');
   }
 
-  public function login(Request $request) 
-  {
+// Inside AuthController.php
+
+public function login(Request $request) 
+{
     $identifier = $this->input('username');
     $password = $this->input('password');
     $user = $this->userRepo->findByCredentials($identifier);
 
     if ($user && password_verify($password, $user->password)) {
-      if ($user->status !== 'active') {
-        $_SESSION['error'] = "Account is not verified. Please check your email.";
-        $this->redirect('/auth/login');
+        if ($user->status !== 'active') {
+            $_SESSION['error'] = "Account is not verified.";
+            $this->redirect('/auth/login');
+            return;
+        }
+
+        // Set Sessions
+        $_SESSION['user_id'] = $user->id;
+        $_SESSION['user_type'] = $user->type;
+        $_SESSION['user_name'] = $user->username;
+
+        // REDIRECT (Don't call $this->view here)
+        if ($user->type === 'admin' || $user->type === 'staff') {
+            $this->redirect('/staff/dashboard');
+        } else {
+            $this->redirect('/student/dashboard'); // Go to the proper controller
+        }
         return;
-      }
-
-      $_SESSION['user_id'] = $user->id;
-      $_SESSION['user_type'] = $user->type;
-      $_SESSION['user_name'] = $user->username;
-      $_SESSION['id_number'] = $user->id_number;
-
-      Logger::log("LOGIN SUCCESS: User {$user->username} logged in.");
-      $_SESSION['success'] = "Successfully logged in as " . $user->username;
-
-      if ($user->type === 'admin' || $user->type === 'staff') {
-        $this->redirect('/staff/dashboard');
-      } else {
-        $this->redirect('/student/dashboard');
-      }
-      return;
     }
-
-    Logger::log("LOGIN FAILED: Attempt for {$identifier}");
     $this->view('login/login', ['error' => 'Invalid credentials'], 'default');
-  }
+}
 
   public function showRegister()
   {

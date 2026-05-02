@@ -64,59 +64,47 @@ class StudentEnrollmentController extends Controller
     }
 
 
-  public function submit(Request $request)
-  {
-  try {
-    $userId = $_SESSION['user_id'];
-    $data = $request->all();
-    $periodId = $data['period_id'] ?? null;
-    $subjectIds = $data['subjects'] ?? [];
+public function submit(Request $request)
+{
+    try {
+        $userId = $_SESSION['user_id'];
+        $data = $request->all();
+        $periodId = $data['period_id'] ?? null;
+        $courseId = $data['course_id'] ?? null;
+        $subjectIds = $data['subjects'] ?? [];
 
-    // 1. Basic Validation
-    if (empty($periodId)) throw new Exception("Please select an academic period.");
-    if (empty($subjectIds)) throw new Exception("Please select at least one subject.");
+        if (empty($periodId) || empty($courseId) || empty($subjectIds)) {
+            throw new Exception("Missing required enrollment details.");
+        }
 
-    // 2. Check for existing application
-    $existing = $this->enrollRepo->findExistingEnrollment($userId, $periodId);
+        // 1. Check for ANY active enrollment in this period (regardless of course)
+        $anyActive = $this->enrollRepo->findActiveInPeriod($userId, $periodId);
 
-    if ($existing) {
-      $status = $existing->status; 
+        if ($anyActive) {
+            // SCENARIO: Same Course
+            if ($anyActive->course_id == $courseId) {
+                $_SESSION['error'] = ($anyActive->status === 'enrolled') 
+                    ? "You are already officially enrolled in this course." 
+                    : "You already have a pending application for this course.";
+                return $this->redirect('/student/enroll');
+            } 
+            
+            // SCENARIO: Different Course (The student is shifting)
+            // We mark the old one as 'shifted' so it's no longer the "Active" one
+            $this->enrollRepo->updateStatus($anyActive->id, 'shifted');
+        }
 
-      // CASE: DROPPED - Permanent block for this period
-      if ($status === 'dropped') {
-        $_SESSION['error'] = "This enrollment has been dropped and cannot be re-submitted for this period.";
+        // 2. Create the new enrollment record
+        $this->enrollRepo->enroll($userId, $data, $subjectIds);
+
+        $_SESSION['success'] = "Enrollment submitted successfully!";
+        return $this->redirect('/student/dashboard');
+
+    } catch (Exception $e) {
+        $_SESSION['error'] = $e->getMessage() ?: "An unexpected error occurred.";
         return $this->redirect('/student/enroll');
-      }
-
-      // CASE: PENDING or ENROLLED - Active block
-      if ($status === 'pending' || $status === 'enrolled') {
-        $_SESSION['error'] = ($status === 'enrolled') 
-          ? "You are already officially enrolled for this period." 
-          : "You already have a pending application. Please wait for approval.";
-        return $this->redirect('/student/enroll');
-      }
-
-      // CASE: REJECTED - Clear old data and allow fresh re-submission
-      if ($status === 'rejected') {
-        $this->enrollRepo->clearPreviousAttempt($existing->id); 
-      }
     }
-
-    // 3. Proceed with Enrollment (For brand new or previously rejected)
-    $this->enrollRepo->enroll($userId, $data, $subjectIds);
-
-    $_SESSION['success'] = "Enrollment submitted successfully!";
-    return $this->redirect('/student/dashboard');
-
-  } catch (Exception $e) {
-    if ($e->getCode() == 23000 || str_contains($e->getMessage(), '1062')) {
-      $_SESSION['error'] = "An active application already exists for this period.";
-    } else {
-      $_SESSION['error'] = $e->getMessage() ?: "An unexpected error occurred.";
-    }
-    return $this->redirect('/student/enroll');
-  }
-  }
+}
   
   public function viewDetails(Request $request, $id)
   {

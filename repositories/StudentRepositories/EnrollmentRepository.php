@@ -12,41 +12,64 @@ use Illuminate\Database\Capsule\Manager as Capsule;
 
 class EnrollmentRepository extends Repository{
   
-  public function enroll($userId, array $data, array $subjectIds) {
+  // ... inside EnrollmentRepository class
+
+/**
+ * Finds if a student has ANY record for the period that is currently active,
+ * regardless of which course it was for.
+ */
+public function findActiveInPeriod($userId, $periodId)
+{
+    return Enrollment::where('user_id', $userId)
+        ->where('period_id', $periodId)
+        ->whereIn('status', ['pending', 'enrolled'])
+        ->first();
+}
+
+/**
+ * Updates status (used for marking old records as 'shifted')
+ */
+public function updateStatus($enrollmentId, $status)
+{
+    return Enrollment::where('id', $enrollmentId)->update([
+        'status' => $status,
+        'updated_at' => date('Y-m-d H:i:s')
+    ]);
+}
+
+public function enroll($userId, array $data, array $subjectIds) {
     return Capsule::transaction(function() use ($userId, $data, $subjectIds) {
-      
-      $initial = \Models\StudentCourses::where('user_id', $userId)->first();
+        
+        // Since the Controller already handles the "Shifting" logic, 
+        // we just perform a final safety check for exact duplicates.
+        $alreadyApplied = Enrollment::where('user_id', $userId)
+            ->where('period_id', $data['period_id'])
+            ->where('course_id', $data['course_id'])
+            ->whereIn('status', ['pending', 'enrolled'])
+            ->exists();
 
-      if (!$initial) {
-          // This is their very first time: Lock the course they chose
-          $initial = \Models\StudentCourses::create([
-              'user_id' => $userId,
-              'course_id' => $data['course_id']
-          ]);
-          $activeCourseId = $data['course_id'];
-      } else {
-          // Course is locked: Use the database value, NOT the user's input
-          $activeCourseId = $initial->course_id;
-      }
+        if ($alreadyApplied) {
+            throw new \Exception("You already have an active application for this specific course.");
+        }
 
-      // 2. Create the Enrollment record using the locked Course ID
-      $enrollment = Enrollment::create([
-          'user_id'      => $userId,
-          'period_id'    => $data['period_id'],
-          'course_id'    => $activeCourseId, // Use the locked ID here
-          'grade_year'   => $data['grade_year'],
-          'id_number'    => $data['id_number'],
-          'scholar_type' => $data['scholar_type'],
-          'status'       => 'pending'
-      ]);
+        // Create the new Enrollment record
+        $enrollment = Enrollment::create([
+            'user_id'      => $userId,
+            'period_id'    => $data['period_id'],
+            'course_id'    => $data['course_id'], 
+            'grade_year'   => $data['grade_year'],
+            'id_number'    => $data['id_number'],
+            'scholar_type' => $data['scholar_type'],
+            'status'       => 'pending'
+        ]);
 
-      if (!empty($subjectIds)) {
-          $enrollment->subjects()->attach($subjectIds);
-      }
+        if (!empty($subjectIds)) {
+            $enrollment->subjects()->attach($subjectIds);
+        }
 
-      return $enrollment;
+        return $enrollment;
     });
-  }
+}
 
   public function getCurriculumSubjects($courseId, $yearLevel, $semester)
   {
@@ -99,11 +122,11 @@ class EnrollmentRepository extends Repository{
     ]);
   }
   // In AcademicPeriodRepository.php
-  public function findExistingEnrollment($userId, $periodId)
+  public function findExistingEnrollment($userId, $periodId, $courseId)
   {
-    // Use the model instead of $this->db for consistency
     return Enrollment::where('user_id', $userId)
       ->where('period_id', $periodId)
+      ->where('course_id', $courseId) // Filter by course now
       ->first(); 
   }
 

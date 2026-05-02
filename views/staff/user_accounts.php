@@ -340,18 +340,22 @@ function resetModalCourseFilter() {
   let visibleCount = 0;
 
   rows.forEach(row => {
-    const name = row.cells[0].textContent.toLowerCase();
-    const username = row.cells[1].textContent.toLowerCase();
-    const email = row.cells[2].textContent.toLowerCase();
+    // Corrected Indices based on your <tr> structure:
+    const idNumber = row.cells[0].textContent.toLowerCase(); // Hidden ID
+    const name     = row.cells[1].textContent.toLowerCase(); // Name
+    const username = row.cells[2].textContent.toLowerCase(); // Username
+    const email    = row.cells[3].textContent.toLowerCase(); // Email
     
-    // Get the type from the badge text (4th column, index 3)
-    const type = row.cells[3].textContent.trim().toLowerCase();
+    // Type is in the 5th column (index 4)
+    const type = row.cells[4].textContent.trim().toLowerCase();
 
-    // Logic: Match Search Text AND Match Type Filter
-    const matchesSearch = name.includes(searchTerm) || 
+    // Logic: Match Search Text (across multiple fields)
+    const matchesSearch = idNumber.includes(searchTerm) || 
+                          name.includes(searchTerm) || 
                           username.includes(searchTerm) || 
                           email.includes(searchTerm);
                           
+    // Logic: Match Type Filter
     const matchesType = (typeFilter === "all") || (type === typeFilter);
 
     if (matchesSearch && matchesType) {
@@ -362,13 +366,14 @@ function resetModalCourseFilter() {
     }
   });
 
-  // Handle "No results" visual feedback
+  // Handle "No results" row
   let noResultsRow = document.getElementById('noUserResults');
   if (visibleCount === 0) {
     if (!noResultsRow) {
       const tbody = document.querySelector('tbody');
       const tr = document.createElement('tr');
       tr.id = 'noUserResults';
+      // Colspan should be 6 to match your <thead>
       tr.innerHTML = `<td colspan="6" class="text-center py-4 text-muted">No accounts match your criteria.</td>`;
       tbody.appendChild(tr);
     }
@@ -376,7 +381,6 @@ function resetModalCourseFilter() {
     noResultsRow.remove();
   }
 }
-
   function editUser(user) {
     const form = document.getElementById('editForm');
     form.action = '/staff/user_accounts/update/' + user.id;

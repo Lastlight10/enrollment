@@ -24,6 +24,22 @@ class EnrollmentRepository extends Repository{
         return Enrollment::with('user')->find($id);
     }
   
+    // Inside EnrollmentRepository.php
+
+public function getLatestActiveEnrollment($userId) {
+    return Enrollment::with(['course', 'period'])
+        ->where('user_id', $userId)
+        ->where('status', 'enrolled') // Or 'pending' if you want to show it early
+        ->orderBy('created_at', 'desc')
+        ->first();
+}
+
+public function getByUser($userId) {
+    return Enrollment::with(['course', 'period', 'subjects'])
+        ->where('user_id', $userId)
+        ->orderBy('created_at', 'desc')
+        ->get();
+}
 
     public function updateStatus($id, $status, $comments = null) {
         $enrollment = Enrollment::find($id);
@@ -246,7 +262,7 @@ class EnrollmentRepository extends Repository{
 
               <div style='padding: 30px;'>
                   <p>Hello <strong>{$user->full_name}</strong>,</p>
-                  <p>Congratulations! Your enrollment for <strong>{$enrollment->period->acad_year} {$enrollment->period->semester}</strong> has been approved.</p>
+                  <p>Success! Your enrollment for <strong>{$enrollment->period->acad_year} {$enrollment->period->semester}</strong> has been approved.</p>
                   
                   <p>To finalize your registration, please settle your downpayment:</p>
                   
@@ -431,13 +447,21 @@ public function sendPaymentUpdateEmail($payment, $status, $remarks = '') {
 
     // 3. Dynamic Content based on Status
     $isApproved = ($status === 'paid');
-    $subject = $isApproved ? "Payment Verified" : "Action Required: Payment Proof Rejected";
+    $isDownpayment = (isset($payment->payment_type) && strtolower($payment->payment_type) === 'downpayment');
+    
+    // Set Subject
+    if ($isApproved) {
+        $subject = $isDownpayment ? "Congratulations! You are officially enrolled" : "Payment Verified";
+    } else {
+        $subject = "Action Required: Payment Proof Rejected";
+    }
+
     $statusText = $isApproved ? "VERIFIED" : "REJECTED";
     $statusColor = $isApproved ? "#198754" : "#dc3545"; // Green for success, Red for danger
     
     $baseUrl = 'http://enrollment.great-site.net';
     $logoPath = $baseUrl . '/static/images/UMLOGO.jpg';
-    $paymentType = ucfirst($payment->type);
+    $paymentType = ucfirst($payment->payment_type ?? 'Payment');
 
     // 4. Construct Message Body
     $messageBody = "
@@ -451,7 +475,18 @@ public function sendPaymentUpdateEmail($payment, $status, $remarks = '') {
             </div>
 
             <div style='padding: 30px;'>
-                <p>Hello <strong>{$user->full_name}</strong>,</p>
+                <p>Hello <strong>{$user->full_name}</strong>,</p>";
+
+    // --- ADDED: Congratulations Message for Downpayment ---
+    if ($isApproved && $isDownpayment) {
+        $messageBody .= "
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <h1 style='color: #198754; margin: 0;'>Congratulations!</h1>
+                    <p style='font-size: 18px; color: #333;'>You are now <strong>OFFICIALLY ENROLLED</strong>.</p>
+                </div>";
+    }
+
+    $messageBody .= "
                 <p>This is to notify you regarding your payment for: <strong>{$paymentType}</strong>.</p>
                 
                 <div style='background-color: #f8f9fa; border-left: 4px solid {$statusColor}; padding: 15px; margin: 20px 0;'>
@@ -464,8 +499,13 @@ public function sendPaymentUpdateEmail($payment, $status, $remarks = '') {
                 <p style='color: #dc3545;'><strong>Reason for Rejection:</strong><br>{$remarks}</p>
                 <p>Please log in to the portal and re-upload a valid proof of payment to proceed with your enrollment.</p>";
     } else {
-        $messageBody .= "
+        if ($isDownpayment) {
+            $messageBody .= "
+                <p>Your downpayment has been verified. You are now cleared for the current academic period. You may view your Certificate of Registration (COR) in the student portal.</p>";
+        } else {
+            $messageBody .= "
                 <p>Your payment has been successfully recorded. You may now check your updated account balance in the student portal.</p>";
+        }
     }
 
     $messageBody .= "
