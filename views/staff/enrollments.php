@@ -223,9 +223,26 @@
                     </a>
 
                     <?php if($e->status === 'pending'): ?>
-                      <button class="btn btn-primary px-3" onclick="openEnrollModal(<?= $e->id ?>, '<?= addslashes($displayName) ?>')">
+                      <?php 
+                        // 1. DATABASE CHECK: See if the student paid a downpayment for this period already
+                        // This handles students who shifted/dropped and are re-applying.
+                        $existingPayment = (new \App\Repositories\StaffRepositories\EnrollmentRepository)->getExistingDownpayment($e->user_id, $e->period_id);
+                        
+                        $hasCredit = $existingPayment ? 'true' : 'false';
+                        $creditAmount = $existingPayment ? $existingPayment->amount : 0;
+                      ?>
+
+                      <!-- 2. UPDATED BUTTON: Now passes credit status to the JS function -->
+                    <button class="btn btn-primary px-3" 
+                            onclick="openEnrollModal(
+                                <?= $e->id ?>, 
+                                '<?= addslashes($displayName) ?>', 
+                                <?= $hasCredit ? 'true' : 'false' ?>, 
+                                <?= $creditAmount ?? 0 ?>, 
+                                <?= $e->is_fullpayment ? 'true' : 'false' ?>
+                            )">
                         <i class="bi bi-check-lg me-1"></i> Enroll
-                      </button>
+                    </button>
                       <button class="btn btn-outline-danger" onclick="openRejectModal(<?= $e->id ?>, '<?= addslashes($displayName) ?>')">
                         <i class="bi bi-x-circle"></i> Reject
                       </button>
@@ -286,6 +303,7 @@
 
 <div class="modal fade" id="rejectModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
+    <!-- Ensure method="POST" is present here -->
     <form id="rejectForm" method="POST" class="modal-content border-0 shadow">
       <div class="modal-header bg-danger text-white border-0">
         <h5 class="modal-title fw-bold">Reject Application</h5>
@@ -298,6 +316,7 @@
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold text-muted">REASON FOR REJECTION (Staff Only)</label>
+          <!-- This name must match what your Controller expects -->
           <textarea name="staff_comments" class="form-control border-0 shadow-sm" rows="4" placeholder="e.g., Incomplete requirements..." required maxlength="100"></textarea>
         </div>
       </div>
@@ -321,6 +340,21 @@
           <label class="small text-muted fw-bold">STUDENT NAME</label>
           <div id="studentName" class="h5 text-dark fw-bold"></div>
         </div>
+        <!-- ADDED THIS: The UI for the Credit Notification -->
+        <div id="creditAlert" class="alert alert-info border-0 shadow-sm d-none mb-3">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-info-circle-fill me-2 fs-4"></i>
+                <div>
+                    <strong class="d-block">Previous Payment Found</strong>
+                    <span class="small">Student already paid ₱<span id="creditAmountDisplay">0</span>.</span>
+                    <button type="button" class="btn btn-sm btn-info text-white mt-1 d-block fw-bold" onclick="applyDownpaymentCredit()">
+                        Apply Credit
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <hr class="text-muted opacity-25">
         <hr class="text-muted opacity-25">
         <label class="small text-muted fw-bold mb-2">FEE BREAKDOWN</label>
         
@@ -330,8 +364,9 @@
             <small>Minimum of amount of ₱1000</small>
             <div class="col-7">
               <label class="form-label x-small mb-1">Type</label>
-              <select name="fees[0][type]" class="form-select border-0 shadow-sm" required onchange="validateUniquePayments()">
+              <select name="fees[0][type]" class="form-select border-0 shadow-sm payment-type-select" required onchange="validateUniquePayments(this)">
                 <option value="downpayment">Downpayment</option>
+                <option value="full_payment">Full Payment</option>
                 <option value="prelim">Prelim</option>
                 <option value="midterm">Midterm</option>
                 <option value="finals">Finals</option>
@@ -427,9 +462,9 @@
   document.getElementById('enrollForm').addEventListener('submit', function(e) {
       const rows = document.querySelectorAll('.fee-row');
       
-      if (rows.length < 4 || rows.length > 5) {
+      if (rows.length < 1 || rows.length > 5) {
           e.preventDefault(); // Stop form submission
-          alert("Invalid Fee Count: You must provide exactly 4 or 5 fee components.");
+          alert("Invalid Fee Count: You must provide exactly 1 to 5 fee components.");
           return false;
       }
   });
@@ -494,96 +529,220 @@
     modal.show();
   }
 
-  function openEnrollModal(id, name) {
+let currentCreditValue = 0;
+let isFullPaymentMode = false;
+function openEnrollModal(id, name, hasCredit = false, amount = 0, requestedFullPayment = false) {
     const form = document.getElementById('enrollForm');
     form.action = '/staff/enrollments/approve/' + id;
     document.getElementById('studentName').innerText = name;
-    if (!enrollModalInstance) enrollModalInstance = new bootstrap.Modal(document.getElementById('enrollModal'));
     
-    // Reset total on open
+    isFullPaymentMode = (requestedFullPayment === true || requestedFullPayment === 1 || requestedFullPayment === 'true');
+    currentCreditValue = amount;
+
+    const creditAlert = document.getElementById('creditAlert');
+    const addFeeBtn = document.querySelector('button[onclick="addRow()"]');
+    
+    resetFeeRows(); 
+
+    const firstSelect = document.querySelector('select[name="fees[0][type]"]');
+    const firstInput = document.querySelector('input[name="fees[0][amount]"]');
+
+    // --- LOGIC START: Filter "Full Payment" ---
+    const fullPaymentOption = firstSelect.querySelector('option[value="full_payment"]');
+    
+    if (isFullPaymentMode) {
+        // Mode: Full Payment Requested
+        fullPaymentOption.style.display = 'block'; // Ensure it's visible
+        firstSelect.value = 'full_payment';
+        firstSelect.style.pointerEvents = 'none'; 
+        firstSelect.classList.add('bg-light');
+        if (addFeeBtn) addFeeBtn.style.display = 'none';
+        firstInput.setAttribute('min', '0'); 
+    } else {
+        // Mode: Installment/Standard
+        fullPaymentOption.style.display = 'none'; // HIDE FULL PAYMENT
+        firstSelect.value = 'downpayment';
+        firstSelect.style.pointerEvents = 'auto';
+        firstSelect.classList.remove('bg-light');
+        if (addFeeBtn) addFeeBtn.style.display = 'block';
+        firstInput.setAttribute('min', '1000');
+    }
+    // --- LOGIC END ---
+
+    // Handle Credit Logic & Labeling
+    const amountLabel = firstInput.closest('.col-4').querySelector('.form-label');
+    if (hasCredit) {
+        creditAlert.classList.remove('d-none');
+        document.getElementById('creditAmountDisplay').innerText = amount;
+        amountLabel.innerHTML = `Amount <span class="text-danger">(-₱${amount} credit)</span>`;
+        firstInput.placeholder = "Remaining balance...";
+    } else {
+        creditAlert.classList.add('d-none');
+        amountLabel.innerHTML = `Amount`;
+        firstInput.placeholder = "0.00";
+    }
+
+    if (!enrollModalInstance) enrollModalInstance = new bootstrap.Modal(document.getElementById('enrollModal'));
     updateLiveTotal();
     enrollModalInstance.show();
-  }
+}
+// Override resetFeeRows to respect the isFullPaymentMode
+function resetFeeRows() {
+    const container = document.getElementById('fee-container');
+    const rows = container.querySelectorAll('.fee-row');
 
-  function openRejectModal(id, name) {
+    // Remove all rows except the first
+    for (let i = 1; i < rows.length; i++) {
+        rows[i].remove();
+    }
+
+    const firstInput = rows[0].querySelector('input[type="number"]');
+    if (firstInput) {
+        firstInput.value = "";
+        // Full payment allows 0 if credit covers everything, downpayment usually min 1000
+        firstInput.setAttribute('min', isFullPaymentMode ? '0' : '1000'); 
+    }
+
+    feeIndex = 1;
+    updateLiveTotal();
+}
+function applyDownpaymentCredit() {
+    // 1. Find all fee type dropdowns in the modal
+    const allSelects = document.querySelectorAll('.payment-type-select, select[name="fees[0][type]"]');
+    let targetRow = null;
+
+    // 2. Locate the row that is set to 'downpayment' or 'full_payment'
+    allSelects.forEach(select => {
+        if (select.value === 'downpayment' || select.value === 'full_payment') {
+            targetRow = select.closest('.row');
+        }
+    });
+
+    // 3. Apply the credit value to that row's input field
+    if (targetRow) {
+        const input = targetRow.querySelector('input[type="number"]');
+        
+        // Use the global currentCreditValue captured when the modal opened
+        input.value = currentCreditValue; 
+        
+        // Update validation state for better UX
+        input.classList.remove('is-invalid');
+        input.classList.add('is-valid');
+        
+        // Set the minimum to the credit value to prevent accidental submission of lower amounts
+        input.setAttribute('min', currentCreditValue); 
+
+        // Recalculate the footer total
+        updateLiveTotal();
+    } else {
+        // If no row matches, prompt the user to select the correct type first
+        alert("Please set one of the fee types to 'Downpayment' or 'Full Payment' first to apply this credit.");
+    }
+}
+function openRejectModal(id, name) {
     const form = document.getElementById('rejectForm');
+    // This maps to your $router->post('/reject/{id}', ...) route
     form.action = '/staff/enrollments/reject/' + id; 
+    
     document.getElementById('rejectStudentName').innerText = name;
-    if (!rejectModalInstance) rejectModalInstance = new bootstrap.Modal(document.getElementById('rejectModal'));
+    
+    if (!rejectModalInstance) {
+        rejectModalInstance = new bootstrap.Modal(document.getElementById('rejectModal'));
+    }
     rejectModalInstance.show();
-  }
+}
+function addRow() {
+    const container = document.getElementById('fee-container');
+    const rows = document.querySelectorAll('.fee-row');
+    
+    if (rows.length >= 5) {
+        alert("Limit reached: You can only add a maximum of 5 fees per student.");
+        return;
+    }
 
-    function addRow() {
-      const container = document.getElementById('fee-container');
-      const rows = document.querySelectorAll('.fee-row');
-      
-      // Check if we already reached the limit of 5
-      if (rows.length >= 5) {
-          alert("Limit reached: You can only add a maximum of 5 fees per student.");
-          return;
-      }
-
-      const div = document.createElement('div');
-      div.className = 'row g-2 mb-2 fee-row align-items-end';
-      
-      div.innerHTML = `
+    const div = document.createElement('div');
+    div.className = 'row g-2 mb-2 fee-row align-items-end';
+    
+    div.innerHTML = `
         <div class="col-7">
-          <select name="fees[${feeIndex}][type]" class="form-select border-0 shadow-sm payment-type-select" required onchange="validateUniquePayments()">
-            <option value="" disabled selected>Select Type</option>
-            <option value="prelim">Prelim</option>
-            <option value="midterm">Midterm</option>
-            <option value="finals">Finals</option>
-            <option value="others">Others</option>
-          </select>
+            <select name="fees[${feeIndex}][type]" class="form-select border-0 shadow-sm payment-type-select" required onchange="validateUniquePayments(this)">
+                <option value="" disabled selected>Select Type</option>
+                <option value="downpayment">Downpayment</option>
+                <option value="full_payment" id="fp-${feeIndex}">Full Payment</option>
+                <option value="prelim">Prelim</option>
+                <option value="midterm">Midterm</option>
+                <option value="finals">Finals</option>
+                <option value="others">Others</option>
+            </select>
         </div>
         <div class="col-4">
-          <input 
-            type="number" 
-            name="fees[${feeIndex}][amount]" 
-            class="form-control border-0 shadow-sm" 
-            placeholder="0.00" 
-            step="0.01" 
-            required 
-            min="0.01" 
-            max="999999"
-            oninput="if(this.value.length > 8) this.value = this.value.slice(0, 8);">
+            <input type="number" name="fees[${feeIndex}][amount]" class="form-control border-0 shadow-sm" placeholder="0.00" step="0.01" required min="0.01" max="999999">
         </div>
         <div class="col-1 text-end">
-          <button type="button" class="btn btn-link text-danger p-0" onclick="removeRow(this)">
-            <i class="bi bi-dash-circle-fill fs-5"></i>
-          </button>
+            <button type="button" class="btn btn-link text-danger p-0" onclick="removeRow(this)">
+                <i class="bi bi-dash-circle-fill fs-5"></i>
+            </button>
         </div>
-      `;
-      container.appendChild(div);
-      feeIndex++;
-      updateLiveTotal(); // Ensure total updates when new row appears
-  }
+    `;
+    
+    container.appendChild(div);
+
+    // --- HIDE FULL PAYMENT IN NEW ROW ---
+    if (!isFullPaymentMode) {
+        const newFpOption = div.querySelector('option[value="full_payment"]');
+        if (newFpOption) newFpOption.style.display = 'none';
+    }
+
+    feeIndex++;
+    updateLiveTotal();
+}
 
   function removeRow(btn) {
     const rows = document.querySelectorAll('.fee-row');
-    if (rows.length <= 4) {
-      alert("Required: You must have at least 4 fees (e.g., Downpayment + 3 Major Exams).");
+    if (rows.length <= 1) {
+      alert("Required: You must have at least 1 fee/s.");
       return;
     }
     btn.closest('.fee-row').remove();
     updateLiveTotal();
   }
+  function validateUniquePayments(changedSelect) {
+    // 1. Get all select elements currently in the form
+    const allSelects = Array.from(document.querySelectorAll('.payment-type-select, select[name="fees[0][type]"]'));
+    const newValue = changedSelect.value;
+    
+    // 2. Identify other rows (exclude the one the user just changed)
+    const otherSelects = allSelects.filter(s => s !== changedSelect);
+    const otherRowsExist = otherSelects.length > 0;
 
-  function validateUniquePayments() {
-    const selects = document.querySelectorAll('.payment-type-select');
-    const selectedValues = [];
+    // 3. Rule: Full Payment Exclusivity
+    // If user picks Full Payment but other rows are already present
+    if (newValue === 'full_payment' && otherRowsExist) {
+    alert("FULL PAYMENT EXCLUSIVITY: 'Full Payment' cannot be combined with other fees. The form will now reset.");
+    
+    // Call the reset helper instead of just setting value to ""
+    resetFeeRows();
+    return; 
+}
 
-    selects.forEach(select => {
-        if (select.value === "") return; // Skip empty/placeholder values
+    // 4. Rule: Block adding anything else if a Full Payment row already exists
+    const hasFullPaymentElsewhere = otherSelects.some(s => s.value === 'full_payment');
+    if (hasFullPaymentElsewhere && newValue !== "") {
+        alert("A 'Full Payment' component is already active. You must remove it before adding other types.");
+        changedSelect.value = "";
+        updateLiveTotal();
+        return;
+    }
 
-        if (selectedValues.includes(select.value)) {
-            alert("This payment type has already been added. Please select a different type.");
-            select.value = ""; // Reset the selection
-        } else {
-            selectedValues.push(select.value);
-        }
-    });
-  }
+    // 5. Standard Duplicate Check (e.g., preventing two 'Prelims')
+    const isDuplicate = otherSelects.some(s => s.value === newValue && s.value !== "");
+    if (isDuplicate) {
+        alert(`The payment type "${newValue.toUpperCase()}" has already been added.`);
+        changedSelect.value = "";
+    }
+
+    updateLiveTotal();
+}
 
 function populateFilters() {
     const rows = document.querySelectorAll('#enrollmentTableBody tr:not(.no-results)');

@@ -168,6 +168,19 @@
                 <option value="half-scholar">Half Scholar</option>
               </select>
             </div>
+            <!-- Payment Choice Section -->
+            <div class="mb-4">
+                <label class="form-label fw-bold">Payment Plan</label>
+                <div class="d-flex gap-2">
+                    <!-- Value "0" maps to false/installment -->
+                    <input type="radio" class="btn-check" name="is_fullpayment" id="plan_installment" value="0" checked>
+                    <label class="btn btn-outline-primary w-100" for="plan_installment">Installment</label>
+
+                    <!-- Value "1" maps to true/full payment -->
+                    <input type="radio" class="btn-check" name="is_fullpayment" id="plan_full" value="1">
+                    <label class="btn btn-outline-primary w-100" for="plan_full">Full Payment</label>
+                </div>
+            </div>
             
             <div class="p-3 bg-light rounded shadow-sm border mb-4">
               <div class="d-flex justify-content-between mb-1">

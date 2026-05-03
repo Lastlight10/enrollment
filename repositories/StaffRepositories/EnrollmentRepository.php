@@ -96,25 +96,43 @@ public function getByUser($userId) {
         return \Models\Payment::with(['enrollment.user', 'enrollment.period'])->findOrFail($id);
     }
   
-  public function approveWithFees(int $id, array $fees) {
+public function approveWithFees(int $id, array $fees) {
     return DB::transaction(function () use ($id, $fees) {
-      $enrollment = Enrollment::findOrFail($id);
+        $enrollment = Enrollment::findOrFail($id);
 
-      // 1. Update Enrollment status
-      $enrollment->update(['status' => 'enrolled']);
+        // 1. Update Enrollment status
+        $enrollment->update(['status' => 'enrolled']);
 
-      // 2. Insert manual fees into payments table
-      foreach ($fees as $fee) {
-        $enrollment->payments()->create([
-          'payment_type' => $fee['type'], // downpayment, prelim, etc.
-          'amount' => $fee['amount'],
-          'status' => 'unpaid'
-        ]);
-      }
+        // 2. Insert manual fees into payments table
+        foreach ($fees as $fee) {
+            // Check if this specific fee type was already paid (e.g., via reservation)
+            // We check if the amount matches the "Credit" detected by the UI
+            $existingPaid = \Models\Payment::whereHas('enrollment', function($q) use ($enrollment) {
+                                $q->where('user_id', $enrollment->user_id)
+                                  ->where('period_id', $enrollment->period_id);
+                            })
+                            ->where('payment_type', $fee['type'])
+                            ->where('status', 'paid')
+                            ->where('amount', $fee['amount'])
+                            ->first();
 
-      return $enrollment;
+            if ($existingPaid) {
+                // If a paid record already exists for this type/amount, 
+                // link it to this NEW enrollment instead of creating an 'unpaid' one
+                $existingPaid->update(['enrollment_id' => $enrollment->id]);
+            } else {
+                // Otherwise, create the new unpaid obligation
+                $enrollment->payments()->create([
+                    'payment_type' => $fee['type'],
+                    'amount' => $fee['amount'],
+                    'status' => 'unpaid'
+                ]);
+            }
+        }
+
+        return $enrollment;
     });
-  }
+}
 
   public function updatePaymentStatus($paymentId, $data)
   {
@@ -577,6 +595,18 @@ public function sendPaymentUpdateEmail($payment, $status, $remarks = '') {
     }
 
     return $query->orderBy('created_at', 'desc')->get();
-}    
+}   
+
+public function getExistingDownpayment($userId, $periodId)
+{
+    return \Models\Payment::whereHas('enrollment', function($query) use ($userId, $periodId) {
+            $query->where('user_id', $userId)
+                  ->where('period_id', $periodId);
+        })
+        // Look for any 'paid' downpayment in this period
+        ->where('payment_type', 'downpayment')
+        ->where('status', 'paid')
+        ->first();
+}
 }
 ?>

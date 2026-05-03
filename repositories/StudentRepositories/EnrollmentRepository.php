@@ -40,31 +40,30 @@ public function updateStatus($enrollmentId, $status)
 public function enroll($userId, array $data, array $subjectIds) {
     return Capsule::transaction(function() use ($userId, $data, $subjectIds) {
         
-        // Since the Controller already handles the "Shifting" logic, 
-        // we just perform a final safety check for exact duplicates.
-        $alreadyApplied = Enrollment::where('user_id', $userId)
-            ->where('period_id', $data['period_id'])
-            ->where('course_id', $data['course_id'])
-            ->whereIn('status', ['pending', 'enrolled'])
-            ->exists();
+        // This handles both the safety check and the creation in one go
+        $enrollment = Enrollment::updateOrCreate(
+            [
+                // Unique keys the DB uses to identify a duplicate
+                'user_id'   => $userId,
+                'period_id' => $data['period_id'],
+                'course_id' => $data['course_id'],
+            ],
+            [
+                // Fields to update or set on creation
+                'grade_year'     => $data['grade_year'],
+                'id_number'      => $data['id_number'],
+                'scholar_type'   => $data['scholar_type'],
+                'is_fullpayment' => (int)($data['is_fullpayment'] ?? 0),
+                'status'         => 'pending' // Reset to pending if it was previously rejected
+            ]
+        );
 
-        if ($alreadyApplied) {
-            throw new \Exception("You already have an active application for this specific course.");
-        }
-
-        // Create the new Enrollment record
-        $enrollment = Enrollment::create([
-            'user_id'      => $userId,
-            'period_id'    => $data['period_id'],
-            'course_id'    => $data['course_id'], 
-            'grade_year'   => $data['grade_year'],
-            'id_number'    => $data['id_number'],
-            'scholar_type' => $data['scholar_type'],
-            'status'       => 'pending'
-        ]);
-
+        // Use sync() instead of attach() to prevent duplicate subjects 
+        // if the student is re-applying after a rejection.
         if (!empty($subjectIds)) {
-            $enrollment->subjects()->attach($subjectIds);
+            $enrollment->subjects()->sync($subjectIds);
+        } else {
+            $enrollment->subjects()->detach();
         }
 
         return $enrollment;
@@ -153,5 +152,4 @@ public function enroll($userId, array $data, array $subjectIds) {
       throw new \Exception("Failed to clear previous enrollment: " . $e->getMessage());
     }
   }
-  
 }

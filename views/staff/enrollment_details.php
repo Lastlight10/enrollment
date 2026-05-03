@@ -75,7 +75,9 @@
                                 $totalFees += $p->amount;
                             ?>
                                 <tr>
-                                    <td class="ps-3 small fw-bold"><?= ucfirst($p->payment_type) ?></td>
+                                    <td class="ps-3 small fw-bold">
+                                      <?= ($p->payment_type === 'full_payment') ? 'Full Payment' : ucfirst($p->payment_type) ?>
+                                    </td>
                                     <td class="small">₱<?= number_format($p->amount, 2) ?></td>
                                     <td class="text-end pe-3">
                                         <div class="d-flex justify-content-end align-items-center gap-2">

@@ -12,77 +12,88 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 
 class PaymentController extends Controller {
-  public function payments() {
-        // Fetch all payments with enrollment and user relationships
-        $payments = PaymentModel::with(['enrollment.user', 'verifier'])->orderBy('created_at', 'desc')->get();
-        return $this->staffView(
-            'staff/payments', 
-            ['payments' => $payments,
-            'title' => 'Manage Payments'],
-            );
-    }
+// In the payments() method
+public function payments() {
+    $payments = PaymentModel::with(['enrollment.user', 'enrollment.period', 'verifier'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+    // Fetch all periods for the filter dropdown
+    $periods = \Models\AcademicPeriod::orderBy('acad_year', 'desc')->get();
+
+    return $this->staffView(
+        'staff/payments', 
+        [
+            'payments' => $payments,
+            'periods' => $periods, // Pass periods here
+            'title' => 'Manage Payments'
+        ]
+    );
+}
 
     // Remove $id from the arguments
-    public function downloadReceipt(Request $request) {
+public function downloadReceipt(Request $request) {
       try {
-        
-        // Get filter values from the URL
-        $search = $_GET['search'] ?? '';
-        $type = $_GET['type'] ?? '';
-        $status = $_GET['status'] ?? '';
-        $from = $_GET['from'] ?? '';
-        $to = $_GET['to'] ?? '';
+        // 1. Get the IDs string from the URL (sent by your JS visibleIds.join(','))
+        $ids_raw = $_GET['ids'] ?? '';
 
-        $query = PaymentModel::with(['enrollment.user', 'verifier']);
-        $payments = $query->orderBy('created_at', 'desc')->get();
-
-        // CHECK IF EMPTY
-        if ($payments->isEmpty()) {
-          $_SESSION['error'] = "Cannot generate report: No records found for the selected filters.";
+        if (empty($ids_raw)) {
+          $_SESSION['error'] = "Cannot generate report: No records were selected or visible.";
           return $this->redirect("/staff/payments");
         }
 
-        // Apply filters to the SQL query if they exist
-        if (!empty($search)) {
-          $query->whereHas('enrollment.user', function($q) use ($search) {
-            $q->where('first_name', 'LIKE', "%$search%")
-            ->orWhere('last_name', 'LIKE', "%$search%")
-            ->orWhere('id_number', 'LIKE', "%$search%");
-          });
-        }
-        if (!empty($type)) {
-          $query->where('payment_type', $type);
+        // 2. Convert string "1,2,3" into array [1, 2, 3]
+        $ids = explode(',', $ids_raw);
+
+        // 3. Fetch ONLY the payments that were visible on the table
+        // We still use 'with' to prevent N+1 queries during PDF generation
+        $payments = PaymentModel::with(['enrollment.user', 'enrollment.period', 'verifier'])
+                    ->whereIn('id', $ids)
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+
+        if ($payments->isEmpty()) {
+          $_SESSION['error'] = "No records found in the database for the selected items.";
+          return $this->redirect("/staff/payments");
         }
 
-        if (!empty($status)) {
-            $query->where('status', $status);
-        }
-        if (!empty($from)) {
-        $query->whereDate('created_at', '>=', $from);
-        }
-        if (!empty($to)) {
-            $query->whereDate('created_at', '<=', $to);
-        }
-        $payments = $query->orderBy('created_at', 'desc')->get();
-          $projectRoot = realpath(__DIR__ . '/../');
+        $projectRoot = realpath(__DIR__ . '/../');
 
-        // Standard Dompdf setup...
-        $options = new \Dompdf\Options();
+        // 1. Define a writable storage path
+        // If you don't have a 'storage' folder, create one in your project root via FTP
+        $storagePath = $projectRoot . '/storage/temp';
+        if (!is_dir($storagePath)) {
+            mkdir($storagePath, 0755, true);
+        }
+
+        // 2. Configure Options
+        $options = new Options();
         $options->set('isRemoteEnabled', true);
-        $dompdf = new \Dompdf\Dompdf($options);
         $options->set('chroot', $projectRoot);
 
+        // THE FIX: Explicitly set directories to prevent the "Path cannot be empty" error
+        $options->set('tempDir', $storagePath);
+        $options->set('fontDir', $storagePath);
+        $options->set('fontCache', $storagePath);
+
+        $dompdf = new Dompdf($options);
+
         ob_start();
+        // The view remains the same, it just loops through the $payments collection
         include __DIR__ . '/../views/staff/payment_report.php'; 
         $html = ob_get_clean();
 
         $dompdf->loadHtml($html);
         $dompdf->setPaper('letter', 'portrait');
         $dompdf->render();
-        $dompdf->stream("Filtered_Payment_Report.pdf", ["Attachment" => false]);
+        
+        // Use a generic name or timestamp
+        $filename = "Payment_Report_" . date('Y-m-d_His') . ".pdf";
+        $dompdf->stream($filename, ["Attachment" => false]);
         exit;
+
       } catch (Exception $ex) {
-        $_SESSION['error'] = $ex->getMessage();
+        $_SESSION['error'] = "Error generating PDF: " . $ex->getMessage();
         return $this->redirect("/staff/payments");
       }
     }

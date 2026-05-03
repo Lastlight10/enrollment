@@ -53,10 +53,11 @@ class StaffEnrollmentController extends Controller {
     ]);
 }
 
-  public function approve(Request $request, $id) {
+public function approve(Request $request, $id) {
     $validated = $request->validate([
       'fees' => 'required|array|min:1',
-      'fees.*.type' => 'required|in:downpayment,prelim,midterm,finals,others',
+      // ADDED 'full_payment' to the allowed types here
+      'fees.*.type' => 'required|in:downpayment,full_payment,prelim,midterm,finals,others',
       'fees.*.amount' => 'required|numeric|min:0'
     ]);
 
@@ -65,20 +66,22 @@ class StaffEnrollmentController extends Controller {
     if ($enrollment) {
       $this->userRepo->enrollStudent($enrollment->user_id);
       
-      $downpaymentAmount = 0;
+      $paymentAmount = 0;
       foreach ($validated['fees'] as $fee) {
-        if ($fee['type'] === 'downpayment') {
-          $downpaymentAmount = $fee['amount'];
+        // Updated to check for BOTH downpayment and full_payment
+        if ($fee['type'] === 'downpayment' || $fee['type'] === 'full_payment') {
+          $paymentAmount = $fee['amount'];
           break;
         }
       }
 
-        $this->enrollmentRepo->sendApprovalEmail($enrollment, $downpaymentAmount);
+      // Pass the found amount (either downpayment or full payment) to the email
+      $this->enrollmentRepo->sendApprovalEmail($enrollment, $paymentAmount);
     }
 
     $_SESSION['success'] = "Enrollment Approved and fees generated.";
     return $this->redirect('/staff/enrollments');
-  }
+}
 
   /**
    * New: Reject with Comments

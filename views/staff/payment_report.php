@@ -11,6 +11,7 @@
         .text-right { text-align: right; }
         .total-section { margin-top: 20px; text-align: right; font-size: 12px; font-weight: bold; }
         .footer { margin-top: 30px; font-size: 9px; color: #777; font-style: italic; }
+        .td {font-size: 8px;}
         .logo {
             width: 80px; /* Adjust width as needed */
             height: auto;
@@ -37,6 +38,7 @@
                 <th>Date</th>
                 <th>Student ID</th>
                 <th>Student Name</th>
+                <th>Period</th>
                 <th>Type</th>
                 <th>Status</th>
                 <th class="text-right">Amount</th>
@@ -50,9 +52,12 @@
                 $displayStatus = ($p->status === 'need_verification') ? 'PENDING VERIFICATION' : strtoupper($p->status);
             ?>
             <tr>
-                <td><?= $p->created_at->format('Y-m-d') ?></td>
+                <td><?= $p->created_at->format('m/d/Y') ?></td>
                 <td><?= $p->enrollment->user->id_number ?></td>
                 <td><?= strtoupper($p->enrollment->user->last_name . ', ' . $p->enrollment->user->first_name . " " .$p->enrollment->user->mid_name) ?></td>
+                <td>
+                  <?= $p->enrollment->period->acad_year ?? '' ?> (<?= $p->enrollment->period->semester ?? '' ?>)
+                </td>
                 <td><?= ucfirst($p->payment_type) ?></td>
                 <td style="color: <?= ($p->status === 'unpaid' ? 'red' : ($p->status === 'need_verification' ? 'orange' : 'green')) ?>;">
                     <?= $displayStatus ?>
