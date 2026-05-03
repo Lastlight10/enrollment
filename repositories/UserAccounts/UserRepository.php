@@ -321,12 +321,30 @@ class UserRepository extends Repository
 
     return $user->save();
   }
+  public function getEnrolledCourseDetails($userId)
+  {
+    // Use Eloquent to get the relationship
+    // Assuming a StudentCourse model exists with a 'course' relationship
+    return \Models\StudentCourses::where('user_id', $userId)
+        ->with('course')
+        ->first();
+  }
   public function updateStudentCourse($userId, $courseId)
   {
-    return StudentCourses::updateOrCreate(
-      ['user_id' => $userId],
-      ['course_id' => $courseId]
+    // 1. Update or Create the course link
+    $courseUpdate = StudentCourses::updateOrCreate(
+        ['user_id' => $userId],
+        ['course_id' => $courseId]
     );
+
+    // 2. Force is_enrolled to true on the User model
+    $user = User::find($userId);
+    if ($user && $user->type === 'student') {
+        $user->is_enrolled = true;
+        $user->save();
+    }
+
+    return $courseUpdate;
   }
 public function getFilteredUsersForReport(array $filters)
 {

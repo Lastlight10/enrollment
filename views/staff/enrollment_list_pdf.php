@@ -14,6 +14,9 @@
             height: auto;
             margin-bottom: 10px;
         }
+        .small_font{
+          font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -26,7 +29,7 @@
         <p>Generated on: <?= date('F j, Y g:i A') ?></p>
     </div>
 
-    <table>
+    <table class="small_font">
         <thead>
             <tr>
                 <th>ID Number</th>
@@ -45,7 +48,7 @@
                 <td><?= $row->course->course_name ?? 'N/A' ?></td>
                 <td><?= $row->grade_year ?></td>
                 <td><?= strtoupper($row->status) ?></td>
-                <td><?= date('M d, Y', strtotime($row->created_at)) ?></td>
+                <td><?= date('m/d/Y', strtotime($row->created_at)) ?></td>
             </tr>
             <?php endforeach; ?>
         </tbody>

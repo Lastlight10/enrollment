@@ -67,6 +67,7 @@ public function login(Request $request)
         if ($user->type === 'admin' || $user->type === 'staff') {
             $this->redirect('/staff/dashboard');
         } else {
+            $_SESSION['id_number'] = $user->id_number;
             $this->redirect('/student/dashboard'); // Go to the proper controller
         }
         return;

@@ -97,6 +97,7 @@ $router->group('/staff', function($router) {
     $router->post('/approve/{id}', 'Controllers\StaffEnrollmentController@approve');
     $router->post('/drop/{id}', 'Controllers\StaffEnrollmentController@drop');
     $router->post('/add-payment/{id}', 'Controllers\StaffEnrollmentController@addPayment');
+    $router->post('/add-fees/{id}', 'Controllers\StaffEnrollmentController@addFees');
 
     
 

@@ -171,6 +171,13 @@
       </div>
     </div>
 </div>
+<?php if($e->status === 'enrolled'): ?>
+    <button type="button" class="btn btn-primary shadow-sm ms-2" onclick="openAddPaymentModal(<?= $e->id ?>, '<?= addslashes($e->user?->full_name) ?>')">
+        <i class="bi bi-plus-circle me-1"></i> Add Fee/Payment
+    </button>
+<?php endif; ?>
+
+
 
 <div class="modal fade" id="paymentReviewModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -233,202 +240,179 @@
     </div>
 </div>
 
-<div class="modal fade" id="enrollModal" tabindex="-1">
+<div class="modal fade" id="addPaymentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <form id="enrollForm" method="POST" class="modal-content border-0 shadow">
+        <div class="modal-content border-0 shadow">
             <div class="modal-header bg-primary text-white border-0">
-                <h5 class="modal-title fw-bold">Approve Enrollment</h5>
+                <h5 class="modal-title fw-bold">Add Additional Fees</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body bg-light">
-                <div class="mb-3">
-                    <label class="small text-muted fw-bold">STUDENT NAME</label>
-                    <div id="studentName" class="h5 text-dark fw-bold"></div>
-                </div>
-                <hr class="text-muted opacity-25">
-                <label class="small text-muted fw-bold mb-2">SET UP FEE BREAKDOWN</label>
-                <div id="fee-container">
-                    <div class="row g-2 mb-2 fee-row align-items-end">
-                        <div class="col-7">
-                            <select name="fees[0][type]" class="form-select border-0 shadow-sm" required>
-                                <option value="downpayment">Downpayment</option>
-                                <option value="prelim">Prelim</option>
-                                <option value="midterm">Midterm</option>
-                                <option value="finals">Finals</option>
-                                <option value="others">Others</option>
-                            </select>
-                        </div>
-                        <div class="col-4">
-                            <div class="input-group">
-                                <span class="input-group-text bg-white border-0 shadow-sm">₱</span>
-                                <input 
-                                type="number" 
-                                name="fees[0][amount]" 
-                                class="form-control border-0 shadow-sm" 
-                                step="0.01" 
-                                required 
-                                placeholder="0.00" 
-                                min="0" 
-                                max="99999" 
-                                oninput="if(this.value.length > 5) this.value = this.value.slice(0, 5);">
+                <form id="addPaymentForm" method="POST">
+                    <div id="additional-fee-container">
+                        <div class="row g-2 mb-2 additional-fee-row align-items-end">
+                            <div class="col-7">
+                                <label class="form-label small fw-bold text-muted">FEE TYPE</label>
+                                <input type="text" name="fees[0][type]" class="form-control border-0 shadow-sm" placeholder="e.g. Graduation Fee, ID" required maxlength="20">
                             </div>
+                             <div class="col-4">
+                              <label class="form-label small fw-bold text-muted">AMOUNT</label>
+                              <input type="number" 
+                                  name="fees[0][amount]" 
+                                  class="form-control border-0 shadow-sm" 
+                                  onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                                  step="0.01" 
+                                  required 
+                                  min="1" 
+                                  oninput="if(this.value.length > 6) this.value = this.value.slice(0, 6);"
+                                  placeholder="0.00">
+                            </div>
+                            <div class="col-1"></div>
                         </div>
                     </div>
-                </div>
-                
-                <button type="button" class="btn btn-sm btn-outline-secondary w-100 mt-3" onclick="addRow()">+ Add Fee Row</button>
+                    
+                    <button type="button" class="btn btn-sm btn-link text-decoration-none mt-2" onclick="addAdditionalRow()">
+                        <i class="bi bi-plus-circle-fill me-1"></i> Add Another Row
+                    </button>
+                </form>
             </div>
-            <div class="modal-footer border-0 bg-white d-flex justify-content-between align-items-center">
-                <div class="fw-bold text-primary h5 mb-0" id="live-total">
-                    Total: ₱0.00
-                </div>
-                
-                <div>
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4">Confirm & Enroll</button>
-                </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="addPaymentForm" class="btn btn-primary rounded-pill px-4">Save Fees</button>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 
-
-
 <script>
-    // Add this to your <script> section
-    document.getElementById('enrollModal').addEventListener('input', function() {
-        let total = 0;
-        document.querySelectorAll('.fee-row input[type="number"]').forEach(input => {
-            total += parseFloat(input.value) || 0;
-        });
-        // Assuming you add an element with id="live-total" in your modal footer
-        const totalDisplay = document.getElementById('live-total');
-        if(totalDisplay) totalDisplay.innerText = 'Total: ₱' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
+ // Keep track of indices and modal instances globally
+let feeIndex = 1;
+let addPaymentIndex = 1;
+let enrollModalInstance = null;
+let rejectModalInstance = null;
+let paymentReviewModalInstance = null;
+let addPaymentModalInstance = null;
+
+/**
+ * UPDATED: Calculate total for ANY number input in the active modal
+ * This now checks both .fee-row and .additional-fee-row
+ */
+function updateLiveTotal() {
+    let total = 0;
+    // Selects all number inputs within the modals to ensure nothing is missed
+    const inputs = document.querySelectorAll('.fee-row input[type="number"], .additional-fee-row input[type="number"]');
+    
+    inputs.forEach(input => {
+        total += parseFloat(input.value) || 0;
     });
-    let enrollModalInstance = null;
-    let rejectModalInstance = null;
-    let paymentReviewModalInstance = null;
-    let feeIndex = 1;
 
-    function openEnrollModal(id, name) {
-        const form = document.getElementById('enrollForm');
-        form.action = '/staff/enrollments/approve/' + id;
-        document.getElementById('studentName').innerText = name;
-        if (!enrollModalInstance) enrollModalInstance = new bootstrap.Modal(document.getElementById('enrollModal'));
-        enrollModalInstance.show();
-    }
-
-    function openRejectModal(id, name) {
-        const form = document.getElementById('rejectForm');
-        form.action = '/staff/enrollments/reject/' + id; 
-        document.getElementById('rejectStudentName').innerText = name;
-        if (!rejectModalInstance) rejectModalInstance = new bootstrap.Modal(document.getElementById('rejectModal'));
-        rejectModalInstance.show();
-    }
-
-    function openPaymentReview(id, type, path, currentRemarks, status) {
-        const form = document.getElementById('paymentReviewForm');
-        if (!form) return;
-
-        form.action = '/staff/enrollments/payments/verify/' + id;
-        document.getElementById('reviewType').innerText = type.charAt(0).toUpperCase() + type.slice(1);
-        
-        const imagePath = '/static/images/uploads/payments/' + path;
-        document.getElementById('receiptPreview').src = imagePath;
-        document.getElementById('receiptLink').href = imagePath;
-        
-        const remarksField = document.getElementById('reviewRemarks');
-        if (remarksField) {
-            remarksField.value = (currentRemarks && currentRemarks !== 'null') ? currentRemarks : '';
-        }
-
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const statusSelect = form.querySelector('select[name="status"]');
-        
-        // Set the dropdown to match current status if it's already paid/unpaid
-        if (statusSelect && (status === 'paid' || status === 'unpaid')) {
-            statusSelect.value = status;
-        } else if (status === 'need_verification') {
-            statusSelect.value = 'paid'; // Default to 'Approve' for convenience
-        }
-
-        // Dynamic button text
-        if (status === 'need_verification') {
-            submitBtn.innerText = "Approve Payment";
-            submitBtn.className = "btn btn-primary rounded-pill px-4";
-        } else {
-            submitBtn.innerText = "Update Verification";
-            submitBtn.className = "btn btn-outline-primary rounded-pill px-4";
-        }
-
-        if (!paymentReviewModalInstance) {
-            paymentReviewModalInstance = new bootstrap.Modal(document.getElementById('paymentReviewModal'));
-        }
-        paymentReviewModalInstance.show();
-    }
-    function addRow() {
-        const container = document.getElementById('fee-container');
-        const div = document.createElement('div');
-        div.className = 'row g-2 mb-2 fee-row align-items-end';
-        
-        // We use the current feeIndex to ensure the name="fees[x]" is unique for PHP
-        div.innerHTML = `
-            <div class="col-7">
-                <select name="fees[${feeIndex}][type]" class="form-select border-0 shadow-sm" required>
-                    <option value="downpayment">Downpayment</option>
-                    <option value="prelim">Prelim</option>
-                    <option value="midterm">Midterm</option>
-                    <option value="finals">Finals</option>
-                    <option value="others">Others</option>
-                </select>
-            </div>
-            <div class="col-4">
-                <div class="input-group">
-                    <span class="input-group-text bg-white border-0 shadow-sm">₱</span>
-                    <input 
-                        type="number" 
-                        name="fees[${feeIndex}][amount]" 
-                        class="form-control border-0 shadow-sm" 
-                        step="0.01" 
-                        required 
-                        placeholder="0.00" 
-                        min="0.01" 
-                        oninput="if(this.value.length > 8) this.value = this.value.slice(0, 8);">
-                </div>
-            </div>
-            <div class="col-1 text-end">
-                <button type="button" class="btn btn-link text-danger p-0" onclick="removeRow(this)">
-                    <i class="bi bi-dash-circle-fill fs-5"></i>
-                </button>
-            </div>
-        `;
-        container.appendChild(div);
-        feeIndex++; // Increment to prevent key collision on next add
-    }
-
-    function removeRow(btn) {
-        const rows = document.querySelectorAll('.fee-row');
-        if (rows.length > 1) {
-            btn.closest('.fee-row').remove();
-            updateLiveTotal(); 
-        }
-    }
-
-    // Extract calculation to a reusable function
-    function updateLiveTotal() {
-        let total = 0;
-        document.querySelectorAll('.fee-row input[type="number"]').forEach(input => {
-            total += parseFloat(input.value) || 0;
+    const totalDisplay = document.getElementById('live-total');
+    if (totalDisplay) {
+        totalDisplay.innerText = 'Total: ₱' + total.toLocaleString(undefined, {
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2
         });
-        const totalDisplay = document.getElementById('live-total');
-        if(totalDisplay) {
-            totalDisplay.innerText = 'Total: ₱' + total.toLocaleString(undefined, {
-                minimumFractionDigits: 2, 
-                maximumFractionDigits: 2
-            });
-        }
+    }
+}
+
+// Add Fee Modal
+function openAddPaymentModal(id, name) {
+    const form = document.getElementById('addPaymentForm');
+    form.action = '/staff/enrollments/add-fees/' + id;
+    
+    if (!addPaymentModalInstance) {
+        addPaymentModalInstance = new bootstrap.Modal(document.getElementById('addPaymentModal'));
+    }
+    addPaymentModalInstance.show();
+}
+function addAdditionalRow() {
+    const container = document.getElementById('additional-fee-container');
+    const div = document.createElement('div');
+    div.className = 'row g-2 mb-2 additional-fee-row align-items-end';
+    
+    div.innerHTML = `
+        <div class="col-7">
+            <input type="text" name="fees[${addPaymentIndex}][type]" class="form-control border-0 shadow-sm" placeholder="Type fee name..." required>
+        </div>
+        <div class="col-4">
+            <input type="number" 
+                   name="fees[${addPaymentIndex}][amount]" 
+                   class="form-control border-0 shadow-sm" 
+                   required 
+                   min="1" 
+                   onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                   oninput="if(this.value.length > 6) this.value = this.value.slice(0, 6); updateLiveTotal();">
+        </div>
+        <div class="col-1 text-end">
+            <button type="button" class="btn btn-link text-danger p-0" onclick="removeRow(this)">
+                <i class="bi bi-dash-circle-fill fs-5"></i>
+            </button>
+        </div>`;
+        
+    container.appendChild(div);
+    addPaymentIndex++;
+    updateLiveTotal();
+}
+
+// Enroll Modal
+function openEnrollModal(id, name) {
+    const form = document.getElementById('enrollForm');
+    form.action = '/staff/enrollments/approve/' + id;
+    document.getElementById('studentName').innerText = name;
+    
+    if (!enrollModalInstance) {
+        enrollModalInstance = new bootstrap.Modal(document.getElementById('enrollModal'));
+        // Listen for inputs to update total
+        document.getElementById('enrollModal').addEventListener('input', updateLiveTotal);
+    }
+    enrollModalInstance.show();
+}
+
+// Payment Review Modal
+function openPaymentReview(id, type, path, currentRemarks, status) {
+    const form = document.getElementById('paymentReviewForm');
+    if (!form) return;
+
+    form.action = '/staff/enrollments/payments/verify/' + id;
+    document.getElementById('reviewType').innerText = type.charAt(0).toUpperCase() + type.slice(1);
+    
+    const imagePath = '/static/images/uploads/payments/' + path;
+    document.getElementById('receiptPreview').src = imagePath;
+    document.getElementById('receiptLink').href = imagePath;
+    
+    const remarksField = document.getElementById('reviewRemarks');
+    if (remarksField) {
+        remarksField.value = (currentRemarks && currentRemarks !== 'null') ? currentRemarks : '';
     }
 
-    // Update your event listener to use the new function
-    document.getElementById('enrollModal').addEventListener('input', updateLiveTotal);
+    const statusSelect = form.querySelector('select[name="status"]');
+    if (statusSelect) {
+        statusSelect.value = (status === 'need_verification') ? 'paid' : status;
+    }
+
+    if (!paymentReviewModalInstance) {
+        paymentReviewModalInstance = new bootstrap.Modal(document.getElementById('paymentReviewModal'));
+    }
+    paymentReviewModalInstance.show();
+}
+
+// Generic Row Removal
+function removeRow(btn) {
+    const row = btn.closest('.row');
+    const container = row.parentElement;
+    
+    // Allow removal only if more than one row exists
+    if (container.querySelectorAll('.row').length > 1) {
+        row.remove();
+        updateLiveTotal();
+    }
+}
+
+// Utility to ensure "Total" resets when modals close
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('hidden.bs.modal', () => {
+        const totalDisplay = document.getElementById('live-total');
+        if (totalDisplay) totalDisplay.innerText = 'Total: ₱0.00';
+    });
+});
 </script>

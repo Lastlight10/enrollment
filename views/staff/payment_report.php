@@ -38,6 +38,7 @@
                 <th>Date</th>
                 <th>Student ID</th>
                 <th>Student Name</th>
+                <th>Year</th>
                 <th>Period</th>
                 <th>Type</th>
                 <th>Status</th>
@@ -50,15 +51,31 @@
             foreach ($payments as $p): 
                 $totalAmount += $p->amount;
                 $displayStatus = ($p->status === 'need_verification') ? 'PENDING VERIFICATION' : strtoupper($p->status);
+                $yr = $p->enrollment->grade_year;
+                if (!$yr) {
+                    $yearLabel = "IRREGULAR";
+                } else {
+                    $yearLabel = $yr ;
+                }
             ?>
+            
             <tr>
                 <td><?= $p->created_at->format('m/d/Y') ?></td>
                 <td><?= $p->enrollment->user->id_number ?></td>
                 <td><?= strtoupper($p->enrollment->user->last_name . ', ' . $p->enrollment->user->first_name . " " .$p->enrollment->user->mid_name) ?></td>
+                <td><?= $yearLabel ?></td>
                 <td>
                   <?= $p->enrollment->period->acad_year ?? '' ?> (<?= $p->enrollment->period->semester ?? '' ?>)
                 </td>
-                <td><?= ucfirst($p->payment_type) ?></td>
+                <td class="align-middle">
+                    <?php 
+                        if ($p->payment_type === 'full_payment') {
+                            echo "Full Payment";
+                        } else {
+                            echo ucfirst($p->payment_type);
+                        }
+                    ?>
+                </td>
                 <td style="color: <?= ($p->status === 'unpaid' ? 'red' : ($p->status === 'need_verification' ? 'orange' : 'green')) ?>;">
                     <?= $displayStatus ?>
                 </td>

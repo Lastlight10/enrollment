@@ -558,18 +558,30 @@ public function sendPaymentUpdateEmail($payment, $status, $remarks = '') {
         return false;
     }
 }
-  public function getFilteredEnrollments(array $filters) {
+public function getFilteredEnrollments(array $filters) {
     $query = Enrollment::with(['user', 'course', 'period', 'payments']);
 
+    // Wrap all search-related OR conditions in a single WHERE group
     if (!empty($filters['search'])) {
-        $query->whereHas('user', function($q) use ($filters) {
-            $q->where('name', 'like', "%{$filters['search']}%")
-              ->orWhere('username', 'like', "%{$filters['search']}%");
-        })->orWhere('id_number', 'like', "%{$filters['search']}%");
+        $query->where(function($q) use ($filters) {
+            $search = $filters['search'];
+            
+            $q->whereHas('user', function($userQuery) use ($search) {
+                // Search across the actual column names in your User model
+                $userQuery->where('first_name', 'like', "%{$search}%")
+                          ->orWhere('mid_name', 'like', "%{$search}%")
+                          ->orWhere('last_name', 'like', "%{$search}%")
+                          ->orWhere('username', 'like', "%{$search}%");
+            })
+            // Search the enrollment's id_number
+            ->orWhere('id_number', 'like', "%{$search}%");
+        });
     }
 
-    if (!empty($filters['course'])) {
-        $query->where('course_id', $filters['course']);
+   if (!empty($filters['course'])) {
+        $query->whereHas('course', function($q) use ($filters) {
+            $q->where('course_code', $filters['course']);
+        });
     }
 
     if (!empty($filters['status'])) {
@@ -580,22 +592,34 @@ public function sendPaymentUpdateEmail($payment, $status, $remarks = '') {
         $query->where('grade_year', $filters['year']);
     }
 
+    // Period logic aligned with searchable-period text
     if (!empty($filters['period'])) {
-        $query->where('period_id', $filters['period']);
+        $periodValue = $filters['period'];
+        $query->whereHas('period', function($q) use ($periodValue) {
+            $q->whereRaw("CONCAT(acad_year, ' ', semester) = ?", [$periodValue]);
+        });
     }
 
     if (!empty($filters['date'])) {
         $query->whereDate('created_at', $filters['date']);
     }
 
+    // FIX: Payment Status logic
     if (!empty($filters['payment_status'])) {
-        $query->whereHas('payments', function($q) use ($filters) {
-            $q->where('status', $filters['payment_status']);
-        });
+        if ($filters['payment_status'] === 'needs_verification') {
+            // Check for payments that match the UI "Verify" criteria
+            $query->whereHas('payments', function($q) {
+                $q->whereIn('status', ['need_verification', 'waiting']);
+            });
+        } else {
+            $query->whereHas('payments', function($q) use ($filters) {
+                $q->where('status', $filters['payment_status']);
+            });
+        }
     }
 
     return $query->orderBy('created_at', 'desc')->get();
-}   
+}
 
 public function getExistingDownpayment($userId, $periodId)
 {
@@ -607,6 +631,18 @@ public function getExistingDownpayment($userId, $periodId)
         ->where('payment_type', 'downpayment')
         ->where('status', 'paid')
         ->first();
+}
+public function addAdditionalPayments($enrollmentId, array $feeData) {
+    $enrollment = Enrollment::findOrFail($enrollmentId);
+    
+    foreach ($feeData as $fee) {
+        $enrollment->payments()->create([
+            'payment_type' => $fee['type'],
+            'amount' => $fee['amount'],
+            'status' => 'unpaid' // Default status for new manual fees
+        ]);
+    }
+    return true;
 }
 }
 ?>

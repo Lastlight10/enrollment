@@ -136,14 +136,14 @@ class StaffController extends Controller
       if ($user->type === 'student' && !empty($data['course_id'])) {
         $currentCourseId = $this->userRepo->getEnrolledCourse($id);
 
-        if ($currentCourseId != $data['course_id']) {
+        // Even if the course ID is the same, you might want to ensure is_enrolled is 1
+        if ($currentCourseId != $data['course_id'] || $user->is_enrolled == 0) {
+          // This method now updates both the course AND the is_enrolled flag
           $this->userRepo->updateStudentCourse($id, $data['course_id']);
-          $this->userRepo->sendStudentCourse($id,$data['course_id']);
-          $_SESSION['success'] = "Student course updated successfully.";
-        } else {
-          if (!$user->isDirty()) {
-            $_SESSION['info'] = "No changes were made to the account or course.";
-          }
+          
+          // Notify the student about their assigned course
+          $this->userRepo->sendStudentCourse($id, $data['course_id']);
+          $_SESSION['success'] = "Student course and enrollment status updated.";
         }
       }
 

@@ -460,15 +460,47 @@
     }
   });
   document.getElementById('enrollForm').addEventListener('submit', function(e) {
-      const rows = document.querySelectorAll('.fee-row');
-      
-      if (rows.length < 1 || rows.length > 5) {
-          e.preventDefault(); // Stop form submission
-          alert("Invalid Fee Count: You must provide exactly 1 to 5 fee components.");
-          return false;
-      }
-  });
+    const rows = document.querySelectorAll('.fee-row');
+    let isValid = true;
+    let hasRequiredPayment = false; // Flag to track if DP or FP exists
 
+    rows.forEach(row => {
+        const type = row.querySelector('select').value;
+        const amountInput = row.querySelector('input[type="number"]');
+        const amount = parseFloat(amountInput.value) || 0;
+
+        // 1. Check for presence of required types
+        if (type === 'downpayment' || type === 'full_payment') {
+            hasRequiredPayment = true;
+        }
+
+        // 2. Minimum Downpayment Check (₱1000 rule)
+        const creditVisible = !document.getElementById('creditAlert').classList.contains('d-none');
+        if (type === 'downpayment' && !creditVisible && amount < 1000) {
+            alert("Downpayment must be at least ₱1000.");
+            isValid = false;
+        }
+    });
+
+    // 3. Prevent submission if no DP or FP is found
+    if (!hasRequiredPayment) {
+        alert("Cannot approve: You must include at least one 'Downpayment' or 'Full Payment' component.");
+        e.preventDefault();
+        return false;
+    }
+
+    if (!isValid) {
+        e.preventDefault();
+        return false;
+    }
+    
+    // 4. Validate Row Count (Exclusivity is handled by validateUniquePayments)
+    if (rows.length < 1 || rows.length > 5) {
+        e.preventDefault();
+        alert("Invalid Fee Count: You must provide exactly 1 to 5 fee components.");
+        return false;
+    }
+});
   function validateDates() {
       const startInput = document.getElementById('announceStartDate');
       const endInput = document.getElementById('announceEndDate');
@@ -531,58 +563,59 @@
 
 let currentCreditValue = 0;
 let isFullPaymentMode = false;
+
 function openEnrollModal(id, name, hasCredit = false, amount = 0, requestedFullPayment = false) {
     const form = document.getElementById('enrollForm');
     form.action = '/staff/enrollments/approve/' + id;
     document.getElementById('studentName').innerText = name;
     
+    // Normalize full payment status
     isFullPaymentMode = (requestedFullPayment === true || requestedFullPayment === 1 || requestedFullPayment === 'true');
     currentCreditValue = amount;
 
     const creditAlert = document.getElementById('creditAlert');
     const addFeeBtn = document.querySelector('button[onclick="addRow()"]');
     
-    resetFeeRows(); 
+    resetFeeRows();
 
     const firstSelect = document.querySelector('select[name="fees[0][type]"]');
     const firstInput = document.querySelector('input[name="fees[0][amount]"]');
 
-    // --- LOGIC START: Filter "Full Payment" ---
+    // --- LOGIC TO HIDE/SHOW FULL PAYMENT OPTION ---
     const fullPaymentOption = firstSelect.querySelector('option[value="full_payment"]');
     
     if (isFullPaymentMode) {
-        // Mode: Full Payment Requested
-        fullPaymentOption.style.display = 'block'; // Ensure it's visible
+        // Show option and lock selection to Full Payment
+        if (fullPaymentOption) fullPaymentOption.style.display = 'block';
         firstSelect.value = 'full_payment';
-        firstSelect.style.pointerEvents = 'none'; 
-        firstSelect.classList.add('bg-light');
         if (addFeeBtn) addFeeBtn.style.display = 'none';
-        firstInput.setAttribute('min', '0'); 
     } else {
-        // Mode: Installment/Standard
-        fullPaymentOption.style.display = 'none'; // HIDE FULL PAYMENT
+        // Hide option and default to Downpayment
+        if (fullPaymentOption) fullPaymentOption.style.display = 'none';
         firstSelect.value = 'downpayment';
-        firstSelect.style.pointerEvents = 'auto';
-        firstSelect.classList.remove('bg-light');
         if (addFeeBtn) addFeeBtn.style.display = 'block';
-        firstInput.setAttribute('min', '1000');
     }
-    // --- LOGIC END ---
 
-    // Handle Credit Logic & Labeling
+    // --- CREDIT NOTIFICATION LOGIC ---
     const amountLabel = firstInput.closest('.col-4').querySelector('.form-label');
-    if (hasCredit) {
+    
+    if (hasCredit && amount > 0) {
         creditAlert.classList.remove('d-none');
         document.getElementById('creditAmountDisplay').innerText = amount;
         amountLabel.innerHTML = `Amount <span class="text-danger">(-₱${amount} credit)</span>`;
         firstInput.placeholder = "Remaining balance...";
+        firstInput.setAttribute('min', '0');
     } else {
         creditAlert.classList.add('d-none');
         amountLabel.innerHTML = `Amount`;
         firstInput.placeholder = "0.00";
+        firstInput.setAttribute('min', isFullPaymentMode ? '0' : '1000');
     }
 
-    if (!enrollModalInstance) enrollModalInstance = new bootstrap.Modal(document.getElementById('enrollModal'));
+    if (!enrollModalInstance) {
+        enrollModalInstance = new bootstrap.Modal(document.getElementById('enrollModal'));
+    }
+    
     updateLiveTotal();
     enrollModalInstance.show();
 }
@@ -607,36 +640,37 @@ function resetFeeRows() {
     updateLiveTotal();
 }
 function applyDownpaymentCredit() {
-    // 1. Find all fee type dropdowns in the modal
+    if (currentCreditValue <= 0) {
+      alert("No credit available to apply.");
+      return;
+    }
     const allSelects = document.querySelectorAll('.payment-type-select, select[name="fees[0][type]"]');
     let targetRow = null;
+    
 
-    // 2. Locate the row that is set to 'downpayment' or 'full_payment'
     allSelects.forEach(select => {
         if (select.value === 'downpayment' || select.value === 'full_payment') {
             targetRow = select.closest('.row');
         }
     });
 
-    // 3. Apply the credit value to that row's input field
     if (targetRow) {
         const input = targetRow.querySelector('input[type="number"]');
         
-        // Use the global currentCreditValue captured when the modal opened
-        input.value = currentCreditValue; 
-        
-        // Update validation state for better UX
-        input.classList.remove('is-invalid');
-        input.classList.add('is-valid');
-        
-        // Set the minimum to the credit value to prevent accidental submission of lower amounts
-        input.setAttribute('min', currentCreditValue); 
+        // Only apply if there is actual credit to apply
+        if (currentCreditValue > 0) {
+            input.value = currentCreditValue; 
+            input.setAttribute('min', currentCreditValue); // Ensure they can't lower it below credit
+            input.classList.remove('is-invalid');
+            input.classList.add('is-valid');
+        } else {
+            // If no credit exists, enforce the 1000 minimum for downpayments
+            input.setAttribute('min', isFullPaymentMode ? '0' : '1000');
+        }
 
-        // Recalculate the footer total
         updateLiveTotal();
     } else {
-        // If no row matches, prompt the user to select the correct type first
-        alert("Please set one of the fee types to 'Downpayment' or 'Full Payment' first to apply this credit.");
+        alert("Please set fee type to 'Downpayment' or 'Full Payment' first.");
     }
 }
 function openRejectModal(id, name) {
@@ -770,14 +804,22 @@ function populateFilters() {
     });
 
     // Populate Period Select
-    const periodSelect = document.getElementById('filterPeriod');
-    periods.forEach(period => {
-        if (![...periodSelect.options].some(opt => opt.value === period)) {
-            const opt = document.createElement('option');
-            opt.value = period;
-            opt.innerHTML = period;
-            periodSelect.appendChild(opt);
-        }
+  const periodSelect = document.getElementById('filterPeriod');
+    // Get unique periods from the table rows
+    
+    // Assuming you have access to the enrollment data or can parse the IDs from the rows
+    document.querySelectorAll('#enrollmentTableBody tr').forEach(row => {
+        const periodText = row.querySelector('.searchable-period')?.innerText.trim();
+        // If your period ID isn't easily available, we must use the text 
+        // BUT the Controller must be ready to receive it.
+        if (periodText) periods.add(periodText);
+    });
+
+    periods.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p; // This value is what gets sent to printReport
+        opt.innerText = p;
+        periodSelect.appendChild(opt);
     });
 }
 
@@ -840,18 +882,29 @@ function filterEnrollments() {
         noResultsMsg.remove();
     }
                     }
-  function printFilteredReport() {
+ function printFilteredReport() {
+    // 1. Grab values from the filter elements
+    const search = document.getElementById('enrollmentSearch').value;
+    const course = document.getElementById('filterCourse').value;
+    const status = document.getElementById('filterStatus').value;
+    const year = document.getElementById('filterYear').value;
+    const period = document.getElementById('filterPeriod').value;
+    const date = document.getElementById('filterDate').value;
+    const payment_status = document.getElementById('filterPaymentStatus').value;
+
+    // 2. Build the Query String
     const params = new URLSearchParams({
-        search: document.getElementById('enrollmentSearch').value,
-        course: document.getElementById('filterCourse').value,
-        status: document.getElementById('filterStatus').value,
-        year: document.getElementById('filterYear').value,
-        period: document.getElementById('filterPeriod').value,
-        date: document.getElementById('filterDate').value,
-        payment_status: document.getElementById('filterPaymentStatus').value
+        search: search,
+        course: course,
+        status: status,
+        year: year,
+        period: period,
+        date: date,
+        payment_status: payment_status
     });
 
-    window.open('/staff/enrollments/print?' + params.toString(), '_blank');
+    // 3. Redirect to the print route with parameters
+    window.open(`/staff/enrollments/print?${params.toString()}`, '_blank');
 }
 </script>
 

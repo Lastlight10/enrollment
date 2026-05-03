@@ -1,3 +1,8 @@
+<style>
+  .small_font{
+    font-size: 12px;
+  }
+</style>
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h2 class="text-uppercase fw-bold">Payment Records</h2>
   <a href="/staff/payments/print_report" id="printReportBtn" class="btn btn-primary shadow-sm" target="_blank">
@@ -38,24 +43,32 @@
             <option value="need_verification">Need Verification</option>
         </select>
     </div>
-    <div class="col-md-2">
-        <label class="small fw-bold">Type</label>
-        <select id="typeFilter" class="form-select shadow-sm" onchange="filterPayments()">
-            <option value="">All Types</option>
-            <option value="downpayment">Downpayment</option>
-            <option value="prelim">Prelim</option>
-            <option value="midterm">Midterm</option>
-            <option value="finals">Finals</option>
-            <option value="others">Others</option>
+  <div class="col-md-2">
+      <label class="small fw-bold">Type</label>
+      <!-- Removed hardcoded options -->
+      <select id="typeFilter" class="form-select shadow-sm" onchange="filterPayments()">
+          <option value="">All Types</option>
+      </select>
+  </div>
+    <div class="col-md-4">
+        <label class="small fw-bold">Period</label>
+        <select id="periodFilter" class="form-select shadow-sm" onchange="filterPayments()">
+            <option value="">All Periods</option>
+            <!-- Options will be populated by JavaScript -->
         </select>
     </div>
-<div class="col-md-4">
-    <label class="small fw-bold">Period</label>
-    <select id="periodFilter" class="form-select shadow-sm" onchange="filterPayments()">
-        <option value="">All Periods</option>
-        <!-- Options will be populated by JavaScript -->
-    </select>
-</div>
+    <div class="col-md-2">
+        <label class="small fw-bold text-muted">YEAR LEVEL</label>
+        <select id="filterYear" class="form-select shadow-sm" onchange="filterPayments()">
+          <option value="">All Years</option>
+          <option value="1st Year">1st Year</option>
+          <option value="2nd Year">2nd Year</option>
+          <option value="3rd Year">3rd Year</option>
+          <option value="4th Year">4th Year</option>
+          <option value="5th Year">5th Year</option>
+          <option value="Irregular">Irregular</option>
+        </select>
+      </div>
     
 </div>
 
@@ -68,24 +81,44 @@
             <th>Date</th>
             <th>Student ID</th>
             <th>Student Name</th>
+            <th>Year</th>
             <th>Period</th>
             <th>Type</th>
             <th>Status</th>
             <th class="text-end">Amount</th>
           </tr>
         </thead>
-        <tbody>
-          <?php foreach ($payments as $p): ?>
+        <tbody class="small_font">
+          <?php foreach ($payments as $p): 
+          $yr = $p->enrollment->grade_year;
+            if (!$yr) {
+                $yearLabel = "Irregular";
+            } else {
+                $yearLabel = $yr ;
+            }
+            
+            ?>
           <tr data-payment-id="<?= $p->id ?>">
             <td class="align-middle"><?= $p->created_at->format('m/d/Y') ?></td>
             <td class="align-middle fw-bold"><?= $p->enrollment->user->id_number ?></td>
             <td class="align-middle text-uppercase">
               <?= $p->enrollment->user->first_name ?> <?= $p->enrollment->user->mid_name ?> <?= $p->enrollment->user->last_name ?>
             </td>
+            <td class="align-middle" data-year="<?= $yearLabel ?>">
+              <?= $yearLabel ?>
+            </td>
             <td class="align-middle" data-period-id="<?= $p->enrollment->period_id ?>">
               <?= $p->enrollment->period->acad_year ?? 'N/A' ?> - <?= $p->enrollment->period->semester ?? '' ?>
             </td>
-            <td class="align-middle"><?= ucfirst($p->payment_type) ?></td>
+            <td class="align-middle">
+                <?php 
+                    if ($p->payment_type === 'full_payment') {
+                        echo "Full Payment";
+                    } else {
+                        echo ucfirst($p->payment_type);
+                    }
+                ?>
+            </td>
             <td class="align-middle">
                 <?php
                     // Determine the color class based on the raw status
@@ -127,7 +160,7 @@
     const periods = new Map();
 
     rows.forEach(row => {
-        const periodCell = row.cells[3]; // The "Period" column
+        const periodCell = row.cells[4]; // The "Period" column
         const periodId = periodCell.getAttribute('data-period-id');
         const periodText = periodCell.textContent.trim();
 
@@ -160,6 +193,7 @@ function filterPayments() {
     const statusSelect = document.getElementById('statusFilter').value;
     const typeSelect = document.getElementById('typeFilter').value.toLowerCase();
     const periodSelect = document.getElementById('periodFilter').value; 
+    const yearSelect = document.getElementById('filterYear').value; // NEW
     const dateFrom = document.getElementById('dateFrom').value;
     const dateTo = document.getElementById('dateTo').value;
     
@@ -168,77 +202,105 @@ function filterPayments() {
     const printBtn = document.getElementById('printReportBtn');
 
     let visibleCount = 0;
-    let visibleIds = []; // NEW: Array to hold IDs of visible rows
+    let visibleIds = [];
 
     rows.forEach(row => {
-        const rowDateText = row.cells[0].textContent.trim(); 
-        const rowDate = new Date(rowDateText);
         const studentID = row.cells[1].textContent.toLowerCase();
         const studentName = row.cells[2].textContent.toLowerCase();
-        const rowPeriodId = row.cells[3].getAttribute('data-period-id');
-        const typeValue = row.cells[4].textContent.trim().toLowerCase(); 
+        const rowYear = row.cells[3].getAttribute('data-year'); // Index 3: Year
+        const rowPeriodId = row.cells[4].getAttribute('data-period-id'); // Index 4: Period
+        const typeValue = row.cells[5].textContent.trim().toLowerCase();
         
-        const badge = row.querySelector('.badge');
-        const isPending = badge.classList.contains('bg-warning');
-        const isPaid = badge.classList.contains('bg-success');
-        const isUnpaid = badge.classList.contains('bg-danger');
-
+        // Search & Status Logic
         const matchesSearch = studentID.includes(searchText) || studentName.includes(searchText);
         
+        const badge = row.querySelector('.badge');
         let matchesStatus = true;
         if (statusSelect !== "") {
-            if (statusSelect === "paid" && !isPaid) matchesStatus = false;
-            if (statusSelect === "unpaid" && !isUnpaid) matchesStatus = false;
-            if (statusSelect === "need_verification" && !isPending) matchesStatus = false;
+            if (statusSelect === "paid" && !badge.classList.contains('bg-success')) matchesStatus = false;
+            if (statusSelect === "unpaid" && !badge.classList.contains('bg-danger')) matchesStatus = false;
+            if (statusSelect === "need_verification" && !badge.classList.contains('bg-warning')) matchesStatus = false;
         }
 
+        // Filter Logic
         const matchesType = (typeSelect === "" || typeValue === typeSelect);
         const matchesPeriod = (periodSelect === "" || rowPeriodId === periodSelect);
+        const matchesYear = (yearSelect === "" || rowYear === yearSelect); // NEW
 
+        // Date Logic
         let matchesDate = true;
-        const checkDate = new Date(rowDate.getFullYear(), rowDate.getMonth(), rowDate.getDate()).getTime();
+        if (dateFrom || dateTo) {
+            const rowDate = new Date(row.cells[0].textContent.trim());
+            const checkTime = new Date(rowDate.getFullYear(), rowDate.getMonth(), rowDate.getDate()).getTime();
 
-        if (dateFrom) {
-            const dFrom = new Date(dateFrom);
-            const from = new Date(dFrom.getFullYear(), dFrom.getMonth(), dFrom.getDate()).getTime();
-            if (checkDate < from) matchesDate = false;
+            if (dateFrom) {
+                const dFrom = new Date(dateFrom);
+                if (checkTime < dFrom.setHours(0,0,0,0)) matchesDate = false;
+            }
+            if (dateTo) {
+                const dTo = new Date(dateTo);
+                if (checkTime > dTo.setHours(0,0,0,0)) matchesDate = false;
+            }
         }
 
-        if (dateTo) {
-            const dTo = new Date(dateTo);
-            const to = new Date(dTo.getFullYear(), dTo.getMonth(), dTo.getDate()).getTime();
-            if (checkDate > to) matchesDate = false;
-        }
-
-        const isVisible = (matchesSearch && matchesStatus && matchesType && matchesPeriod && matchesDate);
+        const isVisible = (matchesSearch && matchesStatus && matchesType && matchesPeriod && matchesYear && matchesDate);
         row.style.display = isVisible ? "" : "none";
         
         if (isVisible) {
             visibleCount++;
-            // NEW: Get the ID from the data attribute and add it to the list
             visibleIds.push(row.getAttribute('data-payment-id'));
         }
     });
 
+    // Update UI and Print Link
     if (visibleCount === 0) {
         if (noResultsRow) noResultsRow.style.display = "";
         printBtn.classList.add('disabled', 'btn-secondary');
-        printBtn.style.pointerEvents = 'none'; 
-        printBtn.href = "#";
+        printBtn.style.pointerEvents = 'none';
     } else {
         if (noResultsRow) noResultsRow.style.display = "none";
         printBtn.classList.remove('disabled', 'btn-secondary');
         printBtn.classList.add('btn-primary');
         printBtn.style.pointerEvents = 'auto';
-
-        // CHANGED: Send the list of IDs instead of filter text
-        const params = new URLSearchParams({
-            ids: visibleIds.join(',') 
-        });
-        printBtn.href = `/staff/payments/print_report?${params.toString()}`;
+        printBtn.href = `/staff/payments/print_report?ids=${visibleIds.join(',')}`;
     }
 }
+/**
+ * Scans the "Type" column (Index 5) and populates the dropdown
+ */
+function populateTypeFilter() {
+    const typeFilter = document.getElementById('typeFilter');
+    const rows = document.querySelectorAll('#paymentTable tbody tr:not(#noResultsRow)');
+    
+    const types = new Set();
+
+    rows.forEach(row => {
+        const typeCell = row.cells[5]; // The "Type" column
+        const typeText = typeCell.textContent.trim();
+
+        if (typeText) {
+            types.add(typeText);
+        }
+    });
+
+    // Clear existing options except "All Types"
+    typeFilter.innerHTML = '<option value="">All Types</option>';
+
+    // Sort alphabetically and append
+    Array.from(types)
+        .sort()
+        .forEach(type => {
+            const option = document.createElement('option');
+            // We use the exact text for the value so the filter matching stays simple
+            option.value = type.toLowerCase(); 
+            option.textContent = type;
+            typeFilter.appendChild(option);
+        });
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
+  populateTypeFilter();
     populatePeriodFilter(); // Build the dropdown based on table content
     filterPayments();       // Set initial button state/visibility
 });</script>

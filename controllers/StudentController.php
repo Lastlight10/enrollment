@@ -47,14 +47,18 @@ class StudentController extends Controller {
     $enrollmentRepo = new \App\Repositories\StudentRepositories\EnrollmentRepository();
     $history = $enrollmentRepo->getStudentHistory($userId);
 
-    // 2. Identify the "Current" enrollment
+    // 2. Fetch the OFFICIAL assigned course (the one staff just updated)
+    // You likely have a method like this in your UserRepository
+    $userRepo = new \App\Repositories\UserAccounts\UserRepository();
+    $officialCourse = $userRepo->getEnrolledCourseDetails($userId); 
+
+    // 3. Payment logic for the most recent enrollment
     $currentEnrollment = $history->first(); 
     $is_paid = false;
     if ($currentEnrollment) {
         $is_paid = $currentEnrollment->payments()->where('status', 'verified')->exists();
     }
 
-    // 3. Repositories for dropdowns
     $periodRepo = new \App\Repositories\StaffRepositories\AcademicPeriodRepository();
     $courseRepo = new \App\Repositories\StaffRepositories\CourseRepository();
     $subjectRepo = new \App\Repositories\StaffRepositories\SubjectRepository();
@@ -66,14 +70,14 @@ class StudentController extends Controller {
       'history'     => $history,
       'is_paid'     => $is_paid,
       
-      // FIX: Rename 'currentEnrollment' to 'user_course' so the view can find it
-      'user_course' => $currentEnrollment, 
+      // CHANGE: Pass the official course record instead of the enrollment history record
+      'user_course' => $officialCourse, 
       
       'periods'     => $periodRepo->all(),
       'courses'     => $courseRepo->all(),
       'subjects'    => $subjectRepo->all()
     ]);
- }
+}
   public function updateProfile() {
     $userId = $_SESSION['user_id'];
     $userRepo = new \App\Repositories\UserAccounts\UserRepository();

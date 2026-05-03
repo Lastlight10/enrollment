@@ -268,4 +268,25 @@ public function reject(Request $request, $id) {
         return $this->redirect("/staff/enrollments/details/$id");
     }
 }
+// Ensure the order matches what your Router sends
+public function addFees(Request $request, $id) { 
+    // 1. Get the data from the Request object correctly
+    $fees = $request->input('fees') ?? [];
+
+    if (empty($fees)) {
+        $_SESSION['error'] = "No fees provided";
+        return $this->redirect("/staff/enrollments/details/$id");
+    }
+
+    try {
+        // 2. PASS THE $id (the string/number), NOT the $request object
+        $this->enrollmentRepo->addAdditionalPayments($id, $fees);
+
+        $_SESSION['success'] = "Fees added successfully";
+    } catch (\Exception $e) {
+        $_SESSION['error'] = "Error: " . $e->getMessage();
+    }
+
+    return $this->redirect("/staff/enrollments/details/$id");
+}
 }
