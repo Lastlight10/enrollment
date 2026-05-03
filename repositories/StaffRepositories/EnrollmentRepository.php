@@ -540,6 +540,43 @@ public function sendPaymentUpdateEmail($payment, $status, $remarks = '') {
         return false;
     }
 }
-      
+  public function getFilteredEnrollments(array $filters) {
+    $query = Enrollment::with(['user', 'course', 'period', 'payments']);
+
+    if (!empty($filters['search'])) {
+        $query->whereHas('user', function($q) use ($filters) {
+            $q->where('name', 'like', "%{$filters['search']}%")
+              ->orWhere('username', 'like', "%{$filters['search']}%");
+        })->orWhere('id_number', 'like', "%{$filters['search']}%");
+    }
+
+    if (!empty($filters['course'])) {
+        $query->where('course_id', $filters['course']);
+    }
+
+    if (!empty($filters['status'])) {
+        $query->where('status', $filters['status']);
+    }
+
+    if (!empty($filters['year'])) {
+        $query->where('grade_year', $filters['year']);
+    }
+
+    if (!empty($filters['period'])) {
+        $query->where('period_id', $filters['period']);
+    }
+
+    if (!empty($filters['date'])) {
+        $query->whereDate('created_at', $filters['date']);
+    }
+
+    if (!empty($filters['payment_status'])) {
+        $query->whereHas('payments', function($q) use ($filters) {
+            $q->where('status', $filters['payment_status']);
+        });
+    }
+
+    return $query->orderBy('created_at', 'desc')->get();
+}    
 }
 ?>

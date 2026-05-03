@@ -135,16 +135,28 @@ function filterPayments() {
         const matchesStatus = (statusSelect === "" || (statusSelect === "need_verification" ? statusValue.includes("pending") : statusValue === statusSelect));
         const matchesType = (typeSelect === "" || typeValue === typeSelect);
 
-        // Date Range Logic
         let matchesDate = true;
-        const checkDate = new Date(rowDate.getFullYear(), rowDate.getMonth(), rowDate.getDate()).getTime();
-        
+
+        // 1. Get the components of the row date to strip any time data
+        const rowYear = rowDate.getFullYear();
+        const rowMonth = rowDate.getMonth();
+        const rowDay = rowDate.getDate();
+        const checkDate = new Date(rowYear, rowMonth, rowDay).getTime();
+
         if (dateFrom) {
-            const from = new Date(dateFrom).getTime();
+            const dFrom = new Date(dateFrom);
+            // Normalize filter date to midnight
+            const from = new Date(dFrom.getFullYear(), dFrom.getMonth(), dFrom.getDate()).getTime();
             if (checkDate < from) matchesDate = false;
         }
+
         if (dateTo) {
-            const to = new Date(dateTo).getTime();
+            const dTo = new Date(dateTo);
+            // Normalize filter date to midnight
+            const to = new Date(dTo.getFullYear(), dTo.getMonth(), dTo.getDate()).getTime();
+            
+            // If checkDate is today at midnight and 'to' is today at midnight, 
+            // it will now correctly match (checkDate > to will be false)
             if (checkDate > to) matchesDate = false;
         }
 

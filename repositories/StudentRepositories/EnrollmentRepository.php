@@ -153,4 +153,5 @@ public function enroll($userId, array $data, array $subjectIds) {
       throw new \Exception("Failed to clear previous enrollment: " . $e->getMessage());
     }
   }
+  
 }

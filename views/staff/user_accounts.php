@@ -34,6 +34,12 @@
 <?php endif; ?>
 
 <div class="row mb-3">
+  <div class="col-md-3">
+    <!-- NEW: Print Button -->
+    <button type="button" class="btn btn-outline-danger shadow-sm" onclick="printFilteredUsers()">
+      <i class="bi bi-file-pdf"></i> Export to PDF
+    </button>
+  </div>
   <div class="col-md-3 ms-auto">
     <select id="typeFilter" class="form-select shadow-sm" onchange="filterUsers()">
       <option value="all">All Account Types</option>
@@ -412,4 +418,14 @@ function resetModalCourseFilter() {
     const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
     editModal.show();
   }
+  function printFilteredUsers() {
+    const type = document.getElementById('typeFilter').value;
+    const search = document.getElementById('userSearch').value;
+    
+    // Construct the URL with current filter parameters
+    const url = `/staff/user_accounts/print?type=${type}&search=${encodeURIComponent(search)}`;
+    
+    // Open in new tab
+    window.open(url, '_blank');
+}
 </script>

@@ -141,11 +141,11 @@
                 id="id_number" 
                 class="form-control bg-light" 
                 value="<?= $_SESSION['id_number'] ?? '' ?>" 
-                readonly
                 required 
                 minlength="7"
                 maxlength="7" 
                 pattern="\d{7}" 
+                oninput="this.value = this.value.replace(/[^0-9]/g, '');"
                 title="Your official 7-digit Student ID">
                 <div class="form-text">This is your permanent assigned ID number.</div>
             </div>

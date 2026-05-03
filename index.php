@@ -47,7 +47,9 @@ $router->group('/staff', function($router) {
 
   // User Management
   $router->group('/user_accounts', function($router) {
-    $router->get('', 'Controllers\StaffController@user_accounts'); // /staff/users
+    $router->get('', 'Controllers\StaffController@user_accounts'); // /staff/
+    $router->get('/print', 'Controllers\StaffController@printUserReport');
+    
     $router->post('/create', 'Controllers\StaffController@addAccount');
     $router->post('/update/{id}', 'Controllers\StaffController@updateAccount');
     $router->get('/delete/{id}', 'Controllers\StaffController@deleteAccount');
@@ -82,6 +84,7 @@ $router->group('/staff', function($router) {
   // Enrollment & Billing Management
  $router->group('/enrollments', function($router) {
     $router->get('', 'Controllers\StaffEnrollmentController@enrollments');
+    $router->get('/print', 'Controllers\StaffEnrollmentController@printReport');
     
     $router->post('/announce', 'Controllers\StaffEnrollmentController@announceEmail');
     // New: Route to view specific enrollment details

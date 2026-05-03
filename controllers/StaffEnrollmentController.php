@@ -145,6 +145,51 @@ public function reject(Request $request, $id) {
     }
     return $this->redirect('/staff/enrollments');
   }
+  public function printReport(Request $request) {
+    try {
+      // 1. Collect filters from GET request
+      $filters = [
+          'search'         => $request->input('search'),
+          'course'         => $request->input('course'),
+          'status'         => $request->input('status'),
+          'year'           => $request->input('year'),
+          'period'         => $request->input('period'),
+          'date'           => $request->input('date'),
+          'payment_status' => $request->input('payment_status'),
+      ];
+
+      // 2. Fetch filtered data from Repository
+      $enrollments = $this->enrollmentRepo->getFilteredEnrollments($filters);
+
+      // 3. Setup Dompdf
+      $projectRoot = realpath(__DIR__ . '/../');
+      // 2. Setup Dompdf
+      $options = new \Dompdf\Options();
+      $options->set('isRemoteEnabled', true);
+      $options->set('defaultFont', 'DejaVu Sans');
+      $options->set('chroot', $projectRoot);
+      
+      $dompdf = new \Dompdf\Dompdf($options);
+
+      // 4. Render View to HTML
+      ob_start();
+      include __DIR__ . '/../views/staff/enrollment_list_pdf.php';
+      $html = ob_get_clean();
+
+      // 5. Generate PDF
+      $dompdf->loadHtml($html);
+      $dompdf->setPaper('letter', 'portrait'); // Landscape is better for tables
+      $dompdf->render();
+      
+      $filename = "Enrollment_Report_" . date('Y-m-d') . ".pdf";
+      $dompdf->stream($filename, ["Attachment" => false]);
+      exit;
+
+    } catch (Exception $e) {
+        $_SESSION['error'] = "Report Error: " . $e->getMessage();
+        return $this->redirect('/staff/enrollments');
+    }
+  }
 
   public function verifyPayment(Request $request, $id) {
     try {

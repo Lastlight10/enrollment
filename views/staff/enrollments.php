@@ -37,6 +37,9 @@
 <button type="button" class="btn btn-danger shadow-sm mb-3" onclick="openBulkAnnounceModal()">
     <i class="bi bi-megaphone-fill me-2"></i> Announce to All Enrolled Students
 </button>
+<button type="button" class="btn btn-outline-primary shadow-sm mb-3" onclick="printFilteredReport()">
+    <i class="bi bi-printer-fill me-2"></i> Print Enrollment Report
+</button>
 
 <div class="card border-0 shadow-sm mb-4">
   <div class="card-body">
@@ -678,5 +681,18 @@ function filterEnrollments() {
         noResultsMsg.remove();
     }
                     }
+  function printFilteredReport() {
+    const params = new URLSearchParams({
+        search: document.getElementById('enrollmentSearch').value,
+        course: document.getElementById('filterCourse').value,
+        status: document.getElementById('filterStatus').value,
+        year: document.getElementById('filterYear').value,
+        period: document.getElementById('filterPeriod').value,
+        date: document.getElementById('filterDate').value,
+        payment_status: document.getElementById('filterPaymentStatus').value
+    });
+
+    window.open('/staff/enrollments/print?' + params.toString(), '_blank');
+}
 </script>
 

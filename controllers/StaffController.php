@@ -181,4 +181,41 @@ class StaffController extends Controller
     
     $this->redirect('/staff/user_accounts');
   }
+  public function printUserReport(Request $request) {
+    try {
+        // 1. Gather filters from the request
+        $filters = [
+            'type'   => $request->input('type'),
+            'search' => $request->input('search')
+        ];
+
+        // 2. Fetch filtered data (we'll define this method in the Repo next)
+        $users = $this->userRepo->getFilteredUsersForReport($filters);
+
+        $projectRoot = realpath(__DIR__ . '/../');
+        // 2. Setup Dompdf
+        $options = new \Dompdf\Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+        $options->set('chroot', $projectRoot);
+        
+        $dompdf = new \Dompdf\Dompdf($options);
+        // 4. Capture the HTML View
+        ob_start();
+        include __DIR__ . '/../views/staff/user_accounts_pdf.php';
+        $html = ob_get_clean();
+
+        // 5. Generate and Stream
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('letter', 'portrait');
+        $dompdf->render();
+        
+        $dompdf->stream("User_Accounts_Report_" . date('Ymd') . ".pdf", ["Attachment" => false]);
+        exit;
+
+    } catch (Exception $e) {
+        $_SESSION['error'] = "Print Error: " . $e->getMessage();
+        return $this->redirect('/staff/user_accounts');
+    }
+}
 }

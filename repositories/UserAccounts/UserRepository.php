@@ -328,7 +328,27 @@ class UserRepository extends Repository
       ['course_id' => $courseId]
     );
   }
+public function getFilteredUsersForReport(array $filters)
+{
+    $query = User::where('type', '!=', 'admin');
 
+    if (!empty($filters['type']) && $filters['type'] !== 'all') {
+        $query->where('type', $filters['type']);
+    }
+
+    if (!empty($filters['search'])) {
+        $s = $filters['search'];
+        $query->where(function($q) use ($s) {
+            $q->where('first_name', 'like', "%$s%")
+              ->orWhere('last_name', 'like', "%$s%")
+              ->orWhere('username', 'like', "%$s%")
+              ->orWhere('email', 'like', "%$s%")
+              ->orWhere('id_number', 'like', "%$s%");
+        });
+    }
+
+    return $query->orderBy('last_name', 'ASC')->get();
+}
   public function deleteAccount($id) 
   {
     $user = User::findOrFail($id);
