@@ -253,7 +253,10 @@
                         <div class="row g-2 mb-2 additional-fee-row align-items-end">
                             <div class="col-7">
                                 <label class="form-label small fw-bold text-muted">FEE TYPE</label>
-                                <input type="text" name="fees[0][type]" class="form-control border-0 shadow-sm" placeholder="e.g. Graduation Fee, ID" required maxlength="20">
+                                <input type="text" name="fees[0][type]" class="form-control border-0 shadow-sm" placeholder="e.g. Graduation Fee, ID" required maxlength="20"
+                                pattern="[A-Za-z\s]+"
+                                title="Please enter letters only"
+                                oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '')">
                             </div>
                              <div class="col-4">
                               <label class="form-label small fw-bold text-muted">AMOUNT</label>

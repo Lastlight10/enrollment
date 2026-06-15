@@ -276,7 +276,6 @@
             <option value="prelim">Prelim</option>
             <option value="midterm">Midterm</option>
             <option value="finals">Finals</option>
-            <option value="others">Others</option>
           </select>
         </div>
         <div class="row">
@@ -370,7 +369,6 @@
                 <option value="prelim">Prelim</option>
                 <option value="midterm">Midterm</option>
                 <option value="finals">Finals</option>
-                <option value="others">Others</option>
               </select>
             </div>
             <div class="col-4">
@@ -461,7 +459,10 @@
   });
   document.getElementById('enrollForm').addEventListener('submit', function(e) {
     const rows = document.querySelectorAll('.fee-row');
+    const firstSelect = document.querySelector('select[name="fees[0][type]"]');
+    const isFullPayment = firstSelect && firstSelect.value === 'full_payment';
     let isValid = true;
+    
     let hasRequiredPayment = false; // Flag to track if DP or FP exists
 
     rows.forEach(row => {
@@ -494,13 +495,32 @@
         return false;
     }
     
-    // 4. Validate Row Count (Exclusivity is handled by validateUniquePayments)
-    if (rows.length < 1 || rows.length > 5) {
-        e.preventDefault();
-        alert("Invalid Fee Count: You must provide exactly 1 to 5 fee components.");
-        return false;
+  if (isFullPayment) {
+    if (rows.length !== 1) {
+      e.preventDefault();
+      alert("Full Payment must have exactly 1 fee component.");
+      return false;
     }
-});
+  } else {
+    if (rows.length !== 4) {
+            e.preventDefault();
+            alert("Installment plans must have exactly 4 fee components (Downpayment, Prelim, Midterm, and Finals).");
+            return false;
+        }
+        
+        // ADDED: Logic to ensure all 4 specific types are present
+        const selectedTypes = Array.from(document.querySelectorAll('.payment-type-select, select[name="fees[0][type]"]'))
+                                   .map(s => s.value);
+        const required = ['downpayment', 'prelim', 'midterm', 'finals'];
+        const hasAll = required.every(type => selectedTypes.includes(type));
+
+        if (!hasAll) {
+            e.preventDefault();
+            alert("Installments must include: Downpayment, Prelim, Midterm, and Finals.");
+            return false;
+        }
+  }
+  });
   function validateDates() {
       const startInput = document.getElementById('announceStartDate');
       const endInput = document.getElementById('announceEndDate');
@@ -569,47 +589,57 @@ function openEnrollModal(id, name, hasCredit = false, amount = 0, requestedFullP
     form.action = '/staff/enrollments/approve/' + id;
     document.getElementById('studentName').innerText = name;
     
-    // Normalize full payment status
     isFullPaymentMode = (requestedFullPayment === true || requestedFullPayment === 1 || requestedFullPayment === 'true');
     currentCreditValue = amount;
 
     const creditAlert = document.getElementById('creditAlert');
     const addFeeBtn = document.querySelector('button[onclick="addRow()"]');
+    const firstSelect = document.querySelector('select[name="fees[0][type]"]');
+    const firstInput = document.querySelector('input[name="fees[0][amount]"]');
     
     resetFeeRows();
 
-    const firstSelect = document.querySelector('select[name="fees[0][type]"]');
-    const firstInput = document.querySelector('input[name="fees[0][amount]"]');
-
-    // --- LOGIC TO HIDE/SHOW FULL PAYMENT OPTION ---
-    const fullPaymentOption = firstSelect.querySelector('option[value="full_payment"]');
+    // --- OPTION FILTERING ---
+    Array.from(firstSelect.options).forEach(option => {
+        if (isFullPaymentMode) {
+            option.style.display = (option.value === 'full_payment') ? 'block' : 'none';
+        } else {
+            option.style.display = (option.value === 'full_payment') ? 'none' : 'block';
+        }
+    });
     
     if (isFullPaymentMode) {
-        // Show option and lock selection to Full Payment
-        if (fullPaymentOption) fullPaymentOption.style.display = 'block';
         firstSelect.value = 'full_payment';
         if (addFeeBtn) addFeeBtn.style.display = 'none';
     } else {
-        // Hide option and default to Downpayment
-        if (fullPaymentOption) fullPaymentOption.style.display = 'none';
         firstSelect.value = 'downpayment';
         if (addFeeBtn) addFeeBtn.style.display = 'block';
     }
 
-    // --- CREDIT NOTIFICATION LOGIC ---
+    // --- DYNAMIC MINIMUM ENFORCEMENT ---
     const amountLabel = firstInput.closest('.col-4').querySelector('.form-label');
     
     if (hasCredit && amount > 0) {
         creditAlert.classList.remove('d-none');
         document.getElementById('creditAmountDisplay').innerText = amount;
         amountLabel.innerHTML = `Amount <span class="text-danger">(-₱${amount} credit)</span>`;
-        firstInput.placeholder = "Remaining balance...";
+        
+        // If credit exists, the minimum can be 0 (balance already covered)
         firstInput.setAttribute('min', '0');
+        firstInput.placeholder = "Remaining balance...";
     } else {
         creditAlert.classList.add('d-none');
         amountLabel.innerHTML = `Amount`;
-        firstInput.placeholder = "0.00";
-        firstInput.setAttribute('min', isFullPaymentMode ? '0' : '1000');
+        
+        if (isFullPaymentMode) {
+            // SET MINIMUM FOR FULL PAYMENT (e.g., 5000)
+            firstInput.setAttribute('min', '5000'); 
+            firstInput.placeholder = "Min ₱5000.00";
+        } else {
+            // SET MINIMUM FOR DOWNPAYMENT
+            firstInput.setAttribute('min', '1000');
+            firstInput.placeholder = "Min ₱1000.00";
+        }
     }
 
     if (!enrollModalInstance) {
@@ -686,13 +716,14 @@ function openRejectModal(id, name) {
     rejectModalInstance.show();
 }
 function addRow() {
-    const container = document.getElementById('fee-container');
-    const rows = document.querySelectorAll('.fee-row');
-    
-    if (rows.length >= 5) {
-        alert("Limit reached: You can only add a maximum of 5 fees per student.");
-        return;
-    }
+  const container = document.getElementById('fee-container');
+  const rows = document.querySelectorAll('.fee-row');
+  
+  // Stop adding if it's full payment or if we already have 4 rows
+  if (isFullPaymentMode || rows.length >= 4) {
+    alert("Limit reached: Installments require exactly 4 fees, and Full Payment requires 1.");
+    return;
+  }
 
     const div = document.createElement('div');
     div.className = 'row g-2 mb-2 fee-row align-items-end';
@@ -706,7 +737,6 @@ function addRow() {
                 <option value="prelim">Prelim</option>
                 <option value="midterm">Midterm</option>
                 <option value="finals">Finals</option>
-                <option value="others">Others</option>
             </select>
         </div>
         <div class="col-4">
@@ -731,15 +761,15 @@ function addRow() {
     updateLiveTotal();
 }
 
-  function removeRow(btn) {
+function removeRow(btn) {
     const rows = document.querySelectorAll('.fee-row');
-    if (rows.length <= 1) {
-      alert("Required: You must have at least 1 fee/s.");
-      return;
+    if (!isFullPaymentMode && rows.length <= 4) {
+        alert("Required: Installment plans must maintain 4 fee components.");
+        return;
     }
     btn.closest('.fee-row').remove();
     updateLiveTotal();
-  }
+}
   function validateUniquePayments(changedSelect) {
     // 1. Get all select elements currently in the form
     const allSelects = Array.from(document.querySelectorAll('.payment-type-select, select[name="fees[0][type]"]'));
